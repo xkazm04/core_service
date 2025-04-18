@@ -31,9 +31,9 @@ def create_project(project_data: ProjectSchema, db: Session = Depends(get_db)):
     db.refresh(character)
     
     # Create first 3 acts for the project
-    for i in range(1, 4):
-        act = create_act(db, project.id, i, f"Act {i}", i)
-        db.add(act)
+    # for i in range(1, 4):
+    #     act = create_act(db, {project.id, i, f"Act {i}", i})
+    #     db.add(act)
     
     return project
 

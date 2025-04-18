@@ -21,7 +21,7 @@ if os.getenv("TESTING") == "1" or not DATABASE_URL:
     print(f"Using test database: {test_db_url}")
 else:
     if "localhost" in DATABASE_URL and in_docker:
-        db_host = os.getenv("DB_HOST", "db")
+        db_host = os.getenv("DB_HOST", "core")
         DATABASE_URL = DATABASE_URL.replace("localhost", db_host)
         if ":5434" in DATABASE_URL:
             DATABASE_URL = DATABASE_URL.replace(":5434", ":5432")
