@@ -70,7 +70,9 @@ class Character(Base):
     voice = Column(String, nullable=True, default="")
     description = Column(String, nullable=True, default="")
     avatar_url = Column(String, nullable=True, default="")
+    body_url = Column(String, nullable=True, default="")
     transparent_avatar_url = Column(String, nullable=True, default="")
+    transparent_body_url = Column(String, nullable=True, default="")
 
     project = relationship("Project", back_populates="characters")
     prompts = relationship("Prompt", back_populates="characters")
@@ -185,7 +187,9 @@ class Beat(Base):
     type = Column(String, nullable=False)  # 'act' or 'story'
     order = Column(Integer, nullable=True)
     description = Column(String, nullable=True)
-    status = Column(String, nullable=True)
+    paragraph_id = Column(UUID(as_uuid=True), nullable=True)
+    paragraph_title = Column(String, nullable=True)
+    completed = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     default_flag = Column(Boolean, default=False)
     

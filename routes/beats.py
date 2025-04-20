@@ -4,6 +4,9 @@ from database import get_db
 from models.models import Beat
 from uuid import UUID
 from pydantic import BaseModel
+from services.beats import create_beat
+from schemas.beat import BeatCreate
+
 router = APIRouter(tags=["Beats"])
 
 # Get all default beats
@@ -22,22 +25,12 @@ def get_beats_by_act_id(act_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="No beats found")
     return beats
 
-# Create a new beat
-class BeatCreate(BaseModel):
-    name: str
-    act_id: UUID
-    default_flag: bool = False
-    description: str = None
-    type: str = 'act'
-    order: int = 0
-    status: str = 'todo'
     
 @router.post("/")
-def create_beat(beat: BeatCreate, db: Session = Depends(get_db)):
-    new_beat = Beat(**beat.dict())
-    db.add(new_beat)
-    db.commit()
-    db.refresh(new_beat)
+def create_beat_api(beat: BeatCreate, db: Session = Depends(get_db)):
+    new_beat = create_beat(beat, db)
+    if not new_beat:
+        raise HTTPException(status_code=400, detail="Failed to create beat")
     return new_beat
 
 # Edit name or description of a beat

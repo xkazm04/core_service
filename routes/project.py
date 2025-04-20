@@ -1,15 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from uuid import UUID
 from schemas.project import ProjectSchema, ProjectEvaluateRequestSchema, ProjectUpdateSchema
+from schemas.beat import BeatCreate
 from database import get_db
-from models.models import Project, Character
-from routes.act import create_act
+from models.models import Project, Character, Act
 from services.project import update_project_by_id
+from services.beats import create_beat
+from data.beatsDefault import default_beats
 
 router = APIRouter(tags=["Projects"])
 
 @router.post("/")
 def create_project(project_data: ProjectSchema, db: Session = Depends(get_db)):
+    # Create project
     project = Project(
         name=project_data.name,
         user=project_data.user,
@@ -30,10 +34,28 @@ def create_project(project_data: ProjectSchema, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(character)
     
-    # Create first 3 acts for the project
-    # for i in range(1, 4):
-    #     act = create_act(db, {project.id, i, f"Act {i}", i})
-    #     db.add(act)
+    # Create first act for the project
+    act = Act(
+        project_id=project.id,
+        name="Act 1",
+        order=1,
+        description="First act of the story"
+    )
+    db.add(act)
+    db.commit()
+    db.refresh(act)
+    
+    # Create default beats for the act
+    for beat_data in default_beats:
+        beat = BeatCreate(
+            name=beat_data["name"],
+            act_id=act.id,
+            type=beat_data["type"],
+            description=beat_data["description"],
+            order=beat_data["order"],
+            default_flag=beat_data["default_flag"]
+        )
+        create_beat(beat, db)
     
     return project
 

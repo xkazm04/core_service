@@ -39,11 +39,21 @@ def edit_character_endpoint(character_id: str, character_data: dict, db: Session
     character = db.query(Character).filter(Character.id == character_id).first()
     if not character:
         raise HTTPException(status_code=404, detail="Character not found.")
-    character.name = character_data.get("name")
-    character.description = character_data.get("description")
-    character.type = character_data.get("type")
-    db.commit()
-    return {"message": "Character updated successfully."}
+    
+    for field, value in character_data.items():
+        if hasattr(character, field):
+            setattr(character, field, value)
+        else:
+            logging.warning(f"Attempted to update unknown field: {field}")
+    
+    try:
+        db.commit()
+        logging.info(f"Character {character_id} updated successfully.")
+        return {"message": "Character updated successfully."}
+    except Exception as e:
+        db.rollback()
+        logging.error(f"Error updating character {character_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal Server Error.")
 
 # 3. Get all characters by project_id
 @router.get("/project/{project_id}")
