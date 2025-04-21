@@ -33,7 +33,7 @@ def create_character_endpoint(
         logging.error(f"Error creating character: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error creating character: {str(e)}")
 
-# 2. Edit a character
+# 2. Edit a character - used for metadata like image urls, factions
 @router.put("/{character_id}")
 def edit_character_endpoint(character_id: str, character_data: dict, db: Session = Depends(get_db)):
     character = db.query(Character).filter(Character.id == character_id).first()
@@ -134,3 +134,9 @@ def add_avatar_to_character_endpoint(character_id: str, request: AddAvatarReques
         db.rollback()
         logging.error(f"Error adding avatar to character {character_id}: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal Server Error.")
+    
+# Get characters by faction_id
+@router.get("/faction/{faction_id}")
+def get_characters_by_faction_id_endpoint(faction_id: str, db: Session = Depends(get_db)):
+    characters = db.query(Character).filter(Character.faction_id == faction_id).all()
+    return characters if characters else []
