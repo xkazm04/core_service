@@ -4,6 +4,7 @@ from database import get_db
 from models.models import Character
 import logging
 from pydantic import BaseModel
+from services.sse import broadcast_event
 router = APIRouter()
 logging.basicConfig(level=logging.INFO)
 
@@ -23,6 +24,7 @@ def create_character_endpoint(
             name=character_data.get("name"),
             project_id=character_data.get("project_id"),
             type=character_data.get("type"),
+            faction_id=character_data.get("faction_id"),
         )
         db.add(character)  
         db.commit()
@@ -59,6 +61,7 @@ def edit_character_endpoint(character_id: str, character_data: dict, db: Session
 @router.get("/project/{project_id}")
 def get_characters_by_project_id_endpoint(project_id: str, db: Session = Depends(get_db)):
     characters = db.query(Character).filter(Character.project_id == project_id).all()
+    broadcast_event("characters_updated", {"project_id": project_id})
     return characters if characters else []
 
 # 4. Delete a character by id

@@ -40,6 +40,19 @@ class Faction(Base):
 
     project = relationship("Project", back_populates="factions")
     characters = relationship("Character", back_populates="faction")
+    
+class FactionRelationship(Base):
+    __tablename__ = "faction_relationships"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    faction_a_id = Column(UUID(as_uuid=True), nullable=False)
+    faction_b_id = Column(UUID(as_uuid=True), nullable=False)
+    relationship_type = Column(String, nullable=False)  # e.g., "alliance", "rivalry"
+    created_at = Column(DateTime, default=datetime.utcnow)
+    event = Column(String, nullable=True)  
+    event_act_id = Column(UUID(as_uuid=True), ForeignKey("acts.id"), nullable=False)
+
+    event_act = relationship("Act", back_populates="faction_relationships")
 
 
 class Prompt(Base):
@@ -176,6 +189,7 @@ class Act(Base):
 
     project = relationship("Project", back_populates="acts")
     beats = relationship("Beat", back_populates="act", cascade="all, delete-orphan")
+    faction_relationships = relationship("FactionRelationship", back_populates="event_act", cascade="all, delete-orphan")
 
     
 class Beat(Base):

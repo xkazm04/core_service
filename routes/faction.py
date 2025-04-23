@@ -70,3 +70,21 @@ def update_faction(faction_id: UUID, faction_data: FactionUpdate, db: Session = 
     db.commit()
     db.refresh(faction)
     return faction
+
+class MigrateFactionsRequest(BaseModel):
+    source_project_id: UUID
+    target_project_id: UUID
+# 5. Migrate factions from one project to another
+@router.post("/migrate/", response_model=List[FactionResponse])
+def migrate_factions(r: MigrateFactionsRequest, db: Session = Depends(get_db)):
+    source_project = db.query(Project).filter(Project.id == r.source_project_id).first()
+    target_project = db.query(Project).filter(Project.id == r.target_project_id).first()
+    if not source_project or not target_project:
+        raise HTTPException(status_code=404, detail="Source or target project not found")
+    
+    factions = db.query(Faction).filter(Faction.project_id == r.source_project_id).all()
+    for faction in factions:
+        faction.project_id = r.target_project_id
+        db.add(faction)
+    db.commit()
+    return factions if factions else []

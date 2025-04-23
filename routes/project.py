@@ -1,63 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from uuid import UUID
 from schemas.project import ProjectSchema, ProjectEvaluateRequestSchema, ProjectUpdateSchema
-from schemas.beat import BeatCreate
 from database import get_db
-from models.models import Project, Character, Act
+from models.models import Project, Character
 from services.project import update_project_by_id
-from services.beats import create_beat
-from data.beatsDefault import default_beats
+from services.project_builder import create_project
 
 router = APIRouter(tags=["Projects"])
 
 @router.post("/")
-def create_project(project_data: ProjectSchema, db: Session = Depends(get_db)):
-    # Create project
-    project = Project(
-        name=project_data.name,
-        user=project_data.user,
-        type=project_data.type,
-    )
-    db.add(project)
-    db.commit()
-    db.refresh(project)
-
-    # Preset first character into a new project
-    character = Character(
-        name="Narrator",
-        project_id=project.id,
-        type=("Narrator"),
-    )
-
-    db.add(character)
-    db.commit()
-    db.refresh(character)
-    
-    # Create first act for the project
-    act = Act(
-        project_id=project.id,
-        name="Act 1",
-        order=1,
-        description="First act of the story"
-    )
-    db.add(act)
-    db.commit()
-    db.refresh(act)
-    
-    # Create default beats for the act
-    for beat_data in default_beats:
-        beat = BeatCreate(
-            name=beat_data["name"],
-            act_id=act.id,
-            type=beat_data["type"],
-            description=beat_data["description"],
-            order=beat_data["order"],
-            default_flag=beat_data["default_flag"]
-        )
-        create_beat(beat, db)
-    
-    return project
+def create_project_api(project_data: ProjectSchema, db: Session = Depends(get_db)):
+    project = create_project(project_data, db)
+    if not project:
+        raise HTTPException(status_code=400, detail="Project creation failed")
+    return {"message": "Project created successfully", "project_id": str(project.id)}
 
 
 @router.get("/")
