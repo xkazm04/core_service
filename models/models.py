@@ -19,12 +19,14 @@ class Project(Base):
     theme = Column(String, nullable=True)
     concept = Column(String, nullable=True)
     overview = Column(String, nullable=True)
+    created_at = Column(DateTime, nullable=True, default=datetime.utcnow)
 
     scenes = relationship('Scene', back_populates="project", cascade="all, delete-orphan")
     characters = relationship("Character", back_populates="project", cascade="all, delete-orphan")
     prompts = relationship("Prompt", back_populates="project", cascade="all, delete-orphan")
     acts = relationship("Act", back_populates="project", cascade="all, delete-orphan")
     factions = relationship("Faction", back_populates="project", cascade="all, delete-orphan")
+    beats = relationship("Beat", back_populates="project", cascade="all, delete-orphan")
     
 class Faction(Base):
     __tablename__ = "factions"
@@ -86,6 +88,7 @@ class Character(Base):
     body_url = Column(String, nullable=True, default="")
     transparent_avatar_url = Column(String, nullable=True, default="")
     transparent_body_url = Column(String, nullable=True, default="")
+    created_at = Column(DateTime, nullable=True, default=datetime.utcnow)
 
     project = relationship("Project", back_populates="characters")
     prompts = relationship("Prompt", back_populates="characters")
@@ -196,6 +199,7 @@ class Beat(Base):
     __tablename__ = "beats"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    project_id = Column(UUID(as_uuid=True), ForeignKey("projects.id"), nullable=False)
     act_id = Column(UUID(as_uuid=True), ForeignKey("acts.id"), nullable=True)
     name = Column(String, nullable=False)
     type = Column(String, nullable=False)  # 'act' or 'story'
@@ -208,3 +212,4 @@ class Beat(Base):
     default_flag = Column(Boolean, default=False)
     
     act = relationship("Act", back_populates="beats")
+    project = relationship("Project", back_populates="beats")

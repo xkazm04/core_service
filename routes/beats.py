@@ -9,10 +9,10 @@ from schemas.beat import BeatCreate
 
 router = APIRouter(tags=["Beats"])
 
-# Get all default beats
-@router.get("/default")
-def get_beats_by_project_id(db: Session = Depends(get_db)):
-    beats = db.query(Beat).filter(Beat.default_flag == True).all()
+# Get beats by project_id
+@router.get("/project/{project_id}")
+def get_beats_by_project_id(project_id: UUID, db: Session = Depends(get_db)):
+    beats = db.query(Beat).filter(Beat.project_id == project_id).all()
     if not beats:
         raise HTTPException(status_code=404, detail="No beats found")
     return beats
@@ -58,3 +58,14 @@ def delete_beat(beat_id: str, db: Session = Depends(get_db)):
     db.delete(db_beat)
     db.commit()
     return {"detail": "Beat deleted successfully"}
+
+# Delete project beats
+@router.delete("/project/{project_id}")
+def delete_project_beats(project_id: str, db: Session = Depends(get_db)):
+    beats = db.query(Beat).filter(Beat.project_id == project_id).all()
+    if not beats:
+        raise HTTPException(status_code=404, detail="No beats found for this project")
+    for beat in beats:
+        db.delete(beat)
+    db.commit()
+    return {"detail": "All beats for the project deleted successfully"}

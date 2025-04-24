@@ -1,9 +1,11 @@
 from pydantic import BaseModel
-
+from typing import Optional
 class ProjectSchema(BaseModel):
     name: str
     user: str 
     type: str = None
+    overview: Optional[str] = None
+    genre: Optional[str] = None
     
     
 class ProjectEvaluateRequestSchema(BaseModel):

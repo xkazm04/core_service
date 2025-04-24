@@ -5,7 +5,7 @@ from models.models import Character
 import logging
 from pydantic import BaseModel
 from services.sse import broadcast_event
-router = APIRouter()
+router = APIRouter(tags=["Characters"])
 logging.basicConfig(level=logging.INFO)
 
 class AssignVoiceRequest(BaseModel):

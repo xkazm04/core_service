@@ -1,9 +1,10 @@
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 import logging
-from uuid import UUID
+from typing import List, Optional
 from schemas.project import ProjectSchema
 from schemas.beat import BeatCreate
+from schemas.character import CharacterCreate
 from database import get_db
 from models.models import Project, Character, Act, Faction, FactionRelationship
 from services.beats import create_beat
@@ -13,23 +14,32 @@ from data.factionsDefault import default_factions, default_faction_relationships
 # Configure logging
 logger = logging.getLogger(__name__)
 
-def create_project(project_data: ProjectSchema, db: Session = Depends(get_db)):
+def create_project(
+    project_data: ProjectSchema, 
+    db: Session = Depends(get_db),
+    custom_characters: Optional[List[CharacterCreate]] = None,
+    custom_beats: Optional[List[BeatCreate]] = None  # Changed from List[str] to List[BeatCreate]
+):
     """
-    Creates a new project with default associated data.
+    Creates a new project with default associated data and optional custom elements.
     Args:
         project_data: Project schema containing required project information
         db: Database session
+        custom_characters: Optional list of custom characters to create
+        custom_beats: Optional list of custom beat names to create
     Returns:
         Project: The created project object
     Raises:
         HTTPException: If project creation fails
     """
     try:
-        # Create project (mandatory)
+    # 1. Create project (mandatory)
         project = Project(
             name=project_data.name,
             user=project_data.user,
             type=project_data.type,
+            overview=project_data.overview,
+            genre=project_data.genre,
         )
         db.add(project)
         db.commit()
@@ -40,7 +50,7 @@ def create_project(project_data: ProjectSchema, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Failed to create project: {str(e)}")
 
     # Optional elements - continue even if these fail
-    # Create narrator character
+    # 2. Create narrator character
     try:
         character = Character(
             name="Narrator",
@@ -54,8 +64,30 @@ def create_project(project_data: ProjectSchema, db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         logger.error(f"Failed to create narrator character: {str(e)}")
+        
+    # 3. Create characters from user input if provided
+    if custom_characters:
+        for char_data in custom_characters:
+            # Skip characters with empty names
+            if not char_data.name or char_data.name.strip() == "":
+                logger.info(f"Skipping character with empty name for project {project.id}")
+                continue
+                
+            try:
+                character = Character(
+                    name=char_data.name,
+                    type=char_data.type,
+                    project_id=project.id
+                )
+                db.add(character)
+                db.commit()
+                db.refresh(character)
+                logger.info(f"Created custom character '{char_data.name}' for project {project.id}")
+            except Exception as e:
+                db.rollback()
+                logger.error(f"Failed to create custom character '{char_data.name}': {str(e)}")
     
-    # Create first act
+    # 4. Create first act
     act = None
     try:
         act = Act(
@@ -72,13 +104,13 @@ def create_project(project_data: ProjectSchema, db: Session = Depends(get_db)):
         db.rollback()
         logger.error(f"Failed to create Act 1: {str(e)}")
     
-    # Create default beats if act was created successfully
+    # 5. Create default beats if act was created successfully
     if act:
         for beat_data in default_beats:
             try:
                 beat = BeatCreate(
                     name=beat_data["name"],
-                    act_id=act.id,
+                    project_id=project.id,
                     type=beat_data["type"],
                     description=beat_data["description"],
                     order=beat_data["order"],
@@ -88,8 +120,32 @@ def create_project(project_data: ProjectSchema, db: Session = Depends(get_db)):
                 logger.info(f"Created beat '{beat_data['name']}' for Act 1")
             except Exception as e:
                 logger.error(f"Failed to create beat '{beat_data['name']}': {str(e)}")
+                
+    # 6. Create beats from user input if provided
+    if act and custom_beats:
+        # Start with the order after default beats
+        start_order = len(default_beats) + 1
+        
+        for i, beat_data in enumerate(custom_beats):
+            # Skip beats with empty names
+            if not beat_data.name or beat_data.name.strip() == "":
+                logger.info(f"Skipping beat with empty name for project {project.id}")
+                continue
+                
+            try:
+                beat = BeatCreate(
+                    project_id=project.id,
+                    name=beat_data.name,
+                    type='act', 
+                    order=start_order + i,
+                    default_flag=False
+                )
+                create_beat(beat, db)
+                logger.info(f"Created custom beat '{beat_data.name}' for Act 1")
+            except Exception as e:
+                logger.error(f"Failed to create custom beat '{beat_data.name}': {str(e)}")
     
-    # Create default factions
+    # 7. Create default factions
     faction_map = {}  # To map faction names to IDs for relationship creation
     for faction_data in default_factions:
         try:
@@ -109,7 +165,7 @@ def create_project(project_data: ProjectSchema, db: Session = Depends(get_db)):
             db.rollback()
             logger.error(f"Failed to create faction '{faction_data['name']}': {str(e)}")
     
-    # Create faction relationships using the actually created faction IDs
+    # 8. Create faction relationships using the actually created faction IDs
     if act and len(faction_map) >= 2:
         try:
             for relationship_data in default_faction_relationships:

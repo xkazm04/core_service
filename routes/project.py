@@ -1,16 +1,23 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlalchemy.orm import Session
 from schemas.project import ProjectSchema, ProjectEvaluateRequestSchema, ProjectUpdateSchema
 from database import get_db
 from models.models import Project, Character
 from services.project import update_project_by_id
 from services.project_builder import create_project
+from schemas.character import CharacterCreate 
+from schemas.beat import BeatCreate 
+from typing import List
 
 router = APIRouter(tags=["Projects"])
 
 @router.post("/")
-def create_project_api(project_data: ProjectSchema, db: Session = Depends(get_db)):
-    project = create_project(project_data, db)
+def create_project_api(
+    project_data: ProjectSchema, 
+    custom_characters: List[CharacterCreate] = Body(None),
+    custom_beats: List[BeatCreate] = Body(None),
+    db: Session = Depends(get_db)):
+    project = create_project(project_data, db, custom_characters, custom_beats)
     if not project:
         raise HTTPException(status_code=400, detail="Project creation failed")
     return {"message": "Project created successfully", "project_id": str(project.id)}

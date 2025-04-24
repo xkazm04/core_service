@@ -2,32 +2,32 @@ default_factions = [
     {
         "name": "Jedi order",
         "description": "The Jedi Order is a monastic, spiritual, and academic organization of Force-sensitive individuals known as Jedi. They are guardians of peace and justice in the galaxy, serving as diplomats and warriors.",
-        "color": "#00FF00",
-        "image_url": "https://example.com/jedi_order.png"
+        "color": "#d946ef",
+        "image_url": "/factions/faction_jedi.png"
     },
     {
         "name": "Sith order",
         "description": "The Sith Order is a sect of Force-sensitive individuals who embrace the dark side of the Force. They are often in conflict with the Jedi and seek power and domination.",
-        "color": "#FF0000",
-        "image_url": "https://example.com/sith_order.png"
+        "color": "#ef4444",
+        "image_url": "/factions/faction_sith.png"
     },
     {
-        "name": "Galactic Empire",
-        "description": "The Galactic Empire is a totalitarian regime that rules the galaxy with an iron fist. It is known for its military might and oppressive policies.",
-        "color": "#000000",
-        "image_url": "https://example.com/galactic_empire.png"
+        "name": "Republic",
+        "description": "The Galactic Republic is a democratic union of planets and systems in the galaxy. It is governed by elected representatives and is known for its commitment to democracy and justice.",
+        "color": "#3b82f6",
+        "image_url": "/factions/faction_republic.jpg"
     },
     {
         "name": "Rebel Alliance",
         "description": "The Rebel Alliance is a coalition of various groups and individuals who oppose the Galactic Empire. They fight for freedom and justice in the galaxy.",
-        "color": "#FF00FF",
-        "image_url": "https://example.com/rebel_alliance.png"
+        "color": "#f97316",
+        "image_url": "/factions/faction_jedi.png"
     },
     {
         "name": "Bounty Hunters Guild",
         "description": "The Bounty Hunters Guild is an organization of bounty hunters who work independently or in teams to capture targets for a fee. They operate outside the law and often have their own code of conduct.",
-        "color": "#FFFF00",
-        "image_url": "https://example.com/bounty_hunters_guild.png"
+        "color": "#eab308",
+        "image_url": "/factions/faction_jedi.png"
     }
 ]
 
