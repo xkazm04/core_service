@@ -96,18 +96,29 @@ class Character(Base):
     faction = relationship("Faction", back_populates="characters")
     lines = relationship("Line", back_populates="character")
 
-
 class CharacterTrait(Base):
     __tablename__ = "character_trait"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     character_id = Column(UUID(as_uuid=True), ForeignKey("characters.id"), nullable=False)
-    label = Column(String, nullable=False)
+    label = Column(String, nullable=True)
     description = Column(String, nullable=True)
     type = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     
     character = relationship("Character")
+    
+class CharacterRelationshipEvent(Base):
+    __tablename__ = "character_relationships"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    character_a_id = Column(UUID(as_uuid=True), nullable=False)
+    character_b_id = Column(UUID(as_uuid=True), nullable=False)
+    description = Column(String, nullable=False)
+    event_date = Column(String, nullable=True)
+    act_id = Column(UUID(as_uuid=True), ForeignKey("acts.id"), nullable=True)
+    relationship_type = Column(String, nullable=True) 
+    created_at = Column(DateTime, default=datetime.utcnow)
     
 # ----------- Scene models ------------- 
 

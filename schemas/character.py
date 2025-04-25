@@ -17,3 +17,21 @@ class CharacterResponse(CharacterBase):
     
     class Config:
         orm_mode = True
+        
+    
+class RelCreate(BaseModel):
+    """Schema for creating a relationship"""
+    character_a_id: UUID
+    character_b_id: UUID
+    event_date: Optional[str] = None
+    act_id: Optional[UUID] = None
+    relationship_type: Optional[str] = None
+    description: str
+    
+class RelEdit(BaseModel):
+    """Schema for editing a relationship"""
+    rel_id: UUID
+    event_date: Optional[str] = None
+    act_id: Optional[UUID] = None
+    relationship_type: Optional[str] = None
+    description: Optional[str] = None
