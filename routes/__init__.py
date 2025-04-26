@@ -12,7 +12,7 @@ from routes.scene import router as scene_router
 from routes.scene_params import router as scene_params_router
 from routes.line import router as line_router
 from routes.beats import router as beats_router
-from routes.agno import router as agno_router
+from routes.agent import router as agent_router
 from routes.improve import router as improve_router
 
 api_router = APIRouter()
@@ -30,5 +30,5 @@ api_router.include_router(faction_router, prefix="/factions", tags=["Factions"])
 api_router.include_router(faction_rel_router, prefix="/factionrel", tags=["Faction-Relationships"])
 api_router.include_router(trait_router, prefix="/traits", tags=["Traits"])
 api_router.include_router(beats_router, prefix="/beats", tags=["Beats"])
-api_router.include_router(agno_router, prefix="/agno", tags=["Agno"])
+api_router.include_router(agent_router, prefix="/agent", tags=["Agent"])
 api_router.include_router(improve_router, prefix="/improve", tags=["Improve"])
