@@ -1,45 +1,37 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import Dict, Any, Optional
+
 from uuid import UUID
 from sqlalchemy.orm import Session
 from database import get_db
-
+from schemas.agent import ChatResponse
 # Import agent components
 from services.agents.chat_agent import AgentState, workflow, memory
-from services.agents.db_lookup import CharacterLookupArgs, StoryLookupArgs, BeatLookupArgs
+from services.agents.tools.db_lookup import CharacterLookupArgs, StoryLookupArgs, BeatLookupArgs
 # --- NEW: Import suggestion executor ---
 from services.agents.executor import execute_suggestion_function
 
-from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, ToolMessage
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 
 import logging
 
 logger = logging.getLogger(__name__)
 
 # --- Suggestion and Response Models ---
-class Suggestion(BaseModel):
-    feature: str
-    use_case: str
-    initiator: str
-    suggestion_label: str
-    suggestion_text: str
-    be_function: Optional[str] = None
-    fe_navigation: Optional[str] = None
-    topic: str
-
-class ChatResponse(BaseModel):
-    response: str
-    suggestions: List[Suggestion] = Field(default_factory=list)
 
 # --- Request Model ---
 class ChatRequest(BaseModel):
-    user_id: str
+    user_id: Optional[str]
     message: str
     type: str
     project_id: UUID
     character_id: Optional[UUID] = None
-    selected_suggestion_be_function: Optional[str] = Field(None, description="The 'be_function' name if the request comes from clicking a suggestion.")
+    be_function: Optional[str] = Field(None, description="The 'be_function' name if the request comes from clicking a suggestion.")
+    function_params: Optional[Dict[str, Any]] = Field(
+        default_factory=dict,
+        description="Parameters to pass to the be_function if specified"
+    )
 
 router = APIRouter(tags=["Agent Chat"])
 
@@ -54,32 +46,32 @@ async def chat_endpoint(request: ChatRequest, db: Session = Depends(get_db)):
     and returns agent response with suggestions.
     """
     user_input = request.message # This will be suggestion_text if suggestion was clicked
-    user_id = request.user_id
+    user_id = "test_user" if not request.user_id else request.user_id
     project_id = request.project_id
     character_id = request.character_id
     request_type = request.type.lower()
-    selected_be_function = request.selected_suggestion_be_function
+    selected_be_function = request.be_function 
 
     logger.info(f"Received request from user {user_id} for project {project_id} with type {request_type}.")
     if selected_be_function:
         logger.info(f"Request originated from suggestion click: executing '{selected_be_function}'")
 
-    # --- NEW: Execute Suggestion Function (if provided) ---
+    # --- Execute Suggestion Function (if provided) ---
     execution_result_message = None
     if selected_be_function:
         try:
-            execution_result_message = execute_suggestion_function(
+            # Pass function parameters directly from the request
+            result_message = execute_suggestion_function(
                 function_name=selected_be_function,
                 db=db,
-                project_id=project_id,
-                character_id=character_id
-                # Pass other context if needed by executor functions
+                project_id=request.project_id,
+                character_id=request.character_id,
+                **request.function_params  # Use provided parameters
             )
-            logger.info(f"Suggestion execution result: {execution_result_message}")
+            execution_result_message = result_message
         except Exception as e:
-            # Log error but don't stop the chat flow, let the agent know
-            logger.error(f"Unhandled error during suggestion execution '{selected_be_function}': {e}", exc_info=True)
-            execution_result_message = f"An unexpected error occurred while processing the action for '{selected_be_function}'."
+            logger.error(f"Error executing suggestion function: {e}", exc_info=True)
+            execution_result_message = f"Error executing action: {str(e)}"
 
     # --- Prepare Agent Input ---
     agent_input_message = user_input
@@ -145,12 +137,44 @@ async def chat_endpoint(request: ChatRequest, db: Session = Depends(get_db)):
     # --- Extract Structured Response ---
     if final_state_values and final_state_values.get("final_response"):
         final_response_obj = final_state_values["final_response"]
-        if isinstance(final_response_obj, ChatResponse):
-             logger.info(f"Final Response: {final_response_obj}")
+        
+        # Import the expected class to ensure we're using the right one
+        from schemas.agent import ChatResponse as ExpectedChatResponse
+        
+        if isinstance(final_response_obj, ExpectedChatResponse):
+             logger.info(f"Returning ChatResponse: {final_response_obj}")
              return final_response_obj
         else:
-             logger.error(f"Final state 'final_response' was not a ChatResponse object: {final_response_obj}")
-             return ChatResponse(response="Error: Could not generate structured response.", suggestions=[])
-    else:
-        logger.warning("Final state or final_response missing after stream.")
-        return ChatResponse(response="Sorry, I couldn't generate a final response.", suggestions=[])
+             logger.warning(f"Final state 'final_response' was not the expected ChatResponse type: {type(final_response_obj)}")
+             # Try to convert it to the right type
+             try:
+                 if hasattr(final_response_obj, 'response') and hasattr(final_response_obj, 'suggestions'):
+                     response = final_response_obj.response
+                     suggestions = final_response_obj.suggestions
+                     logger.info(f"Converting from {type(final_response_obj)} to ExpectedChatResponse")
+                     return ExpectedChatResponse(response=response, suggestions=suggestions)
+                 elif isinstance(final_response_obj, dict):
+                     logger.info(f"Converting dict to ExpectedChatResponse")
+                     return ExpectedChatResponse(
+                         response=final_response_obj.get("response", "Error: Could not parse response."),
+                         suggestions=final_response_obj.get("suggestions", [])
+                     )
+                 else:
+                     logger.error(f"Could not convert {type(final_response_obj)} to ExpectedChatResponse")
+                     return ExpectedChatResponse(response="Error: Could not generate structured response.", suggestions=[])
+             except Exception as e:
+                 logger.error(f"Error converting to ExpectedChatResponse: {e}")
+                 return ExpectedChatResponse(response="Error: Could not generate structured response.", suggestions=[])
+    elif final_state_values and "messages" in final_state_values:
+        # Try to extract the last AI message as a fallback
+        try:
+            messages = final_state_values["messages"]
+            last_ai_msg = next((m for m in reversed(messages) if isinstance(m, AIMessage)), None)
+            if last_ai_msg:
+                logger.info(f"Using last AI message as fallback response: {last_ai_msg.content[:100]}...")
+                return ChatResponse(response=last_ai_msg.content, suggestions=[])
+        except Exception as e:
+            logger.error(f"Error extracting fallback response from messages: {e}")
+            
+    logger.warning("Final state or final_response missing after stream.")
+    return ChatResponse(response="Sorry, I couldn't generate a final response.", suggestions=[])

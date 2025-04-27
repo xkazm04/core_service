@@ -1,31 +1,28 @@
-import os
-import json
-from typing import TypedDict, Annotated, Sequence, List, Dict, Any, Optional
-from uuid import UUID, uuid4
+from typing import TypedDict, Annotated, Sequence, List, Optional
+from uuid import UUID
 import logging
-
-from fastapi import FastAPI, Depends
-from pydantic import BaseModel # Keep this for internal models if needed
+from pydantic import BaseModel, Field
+from schemas.agent import Suggestion
 from langgraph.graph import StateGraph, END, START
 from langgraph.checkpoint.memory import MemorySaver
-from langgraph.graph.state import StateSnapshot
 from langchain_core.runnables import RunnableConfig
-from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, SystemMessage, ToolMessage
-from langchain_core.pydantic_v1 import BaseModel as LangchainBaseModel # Use for LLM schema binding
+from langchain_core.messages import BaseMessage, AIMessage, SystemMessage, ToolMessage
 from langchain_openai import ChatOpenAI
-from sqlalchemy.orm import Session
-
-# Import tool schemas and executor
-from services.agents.db_lookup import (
-    execute_db_tool,
+from services.agents.pre_processors.name_extraction import extract_character_name
+from services.agents.tools.db_lookup import (
     CharacterLookupArgs,
     StoryLookupArgs,
     BeatLookupArgs
 )
-from database import get_db
-# Import suggestion loader and response models (adjust path if needed)
-from services.suggestion_loader import load_suggestions_by_topic
-from routes.agent import Suggestion, ChatResponse # Import from agent route file
+from services.agents.executors.suggestion_manager import (
+    get_suggestions_for_topic, 
+    get_suggestion_prompt, 
+    get_fallback_suggestions
+)
+
+class ChatResponse(BaseModel):
+    response: str
+    suggestions: List[Suggestion] = Field(default_factory=list)
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +32,7 @@ class AgentState(TypedDict):
     project_id: Optional[UUID]
     character_id: Optional[UUID]
     request_type: Optional[str] # Add request_type to state
-    # Store the final structured response
+    extracted_character_names: Optional[List[str]] # Add this new field
     final_response: Optional[ChatResponse]
 
 # --- LLM and Tool Binding ---
@@ -50,6 +47,9 @@ llm_with_tools = llm.bind_tools(
 structured_llm = llm.with_structured_output(ChatResponse)
 
 # --- Graph Nodes ---
+
+# Add this new function before the graph definition
+
 
 def call_model_for_tool_or_direct(state: AgentState):
     """
@@ -73,7 +73,6 @@ def call_model_for_tool_or_direct(state: AgentState):
 
 def tool_node_executor(state: AgentState, config: RunnableConfig):
     """Executes DB tools based on the last AI message."""
-    # ... (tool_node_executor remains the same) ...
     logger.info("--- Executing Tool Node ---")
     db_session = config['configurable'].get('db_session')
     if not db_session:
@@ -81,12 +80,76 @@ def tool_node_executor(state: AgentState, config: RunnableConfig):
         last_message = state['messages'][-1]
         tool_call_id = last_message.tool_calls[0]['id'] if isinstance(last_message, AIMessage) and last_message.tool_calls else "error_no_tool_call_id"
         return {"messages": [ToolMessage(content="Error: Database connection not available.", tool_call_id=tool_call_id)]}
-    tool_result = execute_db_tool(state, db_session)
-    logger.info(f"Tool Execution Result: {tool_result}")
-    return tool_result
+    
+    # Get the last message
+    last_message = state['messages'][-1]
+    
+    if not isinstance(last_message, AIMessage) or not last_message.tool_calls:
+        logger.error("Expected AI message with tool calls, but found none")
+        return {"messages": [SystemMessage(content="Error: No tool calls found in the last message.")]}
+    
+    # Handle each tool call
+    tool_messages = []
+    for tool_call in last_message.tool_calls:
+        tool_id = tool_call['id']
+        tool_name = tool_call['name']
+        tool_args = tool_call['args']
+        
+        logger.info(f"Processing tool call: {tool_name} (ID: {tool_id})")
+        
+        try:
+            result_content = ""
+            
+            # Check if tool is CharacterLookupArgs and handle extracted names
+            if tool_name == CharacterLookupArgs.__name__:
+                from services.agents.tools.db_lookup import db_character_lookup_tool
+                
+                parsed_args = CharacterLookupArgs.parse_obj(tool_args)
+                character_id = parsed_args.character_id or state.get('character_id')
+                character_name = parsed_args.character_name
+                
+                # If no character_id or name provided, check extracted_character_names
+                if not character_id and not character_name and 'extracted_character_names' in state:
+                    extracted_names = state.get('extracted_character_names', [])
+                    if extracted_names:
+                        character_name = extracted_names[0]
+                        logger.info(f"Using extracted character name: {character_name}")
+                
+                result_content = db_character_lookup_tool(
+                    db=db_session,
+                    project_id=state['project_id'],
+                    character_id=character_id,
+                    character_name=character_name
+                )
+            elif tool_name == StoryLookupArgs.__name__:
+                from services.agents.tools.db_lookup import db_story_lookup_tool
+                result_content = db_story_lookup_tool(
+                    db=db_session,
+                    project_id=state['project_id']
+                )
+            elif tool_name == BeatLookupArgs.__name__:
+                from services.agents.tools.db_lookup import db_beat_lookup_tool
+                result_content = db_beat_lookup_tool(
+                    db=db_session,
+                    project_id=state['project_id']
+                )
+            else:
+                result_content = f"Error: Unknown tool '{tool_name}'"
+                
+        except Exception as e:
+            logger.error(f"Error executing tool {tool_name}: {e}", exc_info=True)
+            result_content = f"Error executing tool: {str(e)}"
+        
+        # Create a tool message with the result
+        tool_messages.append(ToolMessage(
+            content=result_content,
+            tool_call_id=tool_id
+        ))
+    
+    logger.info(f"Returning {len(tool_messages)} tool messages")
+    return {"messages": tool_messages}
 
 
-# --- NEW: Node to Generate Final Structured Response ---
 def generate_final_response(state: AgentState):
     """
     Calls the LLM bound with the ChatResponse schema to generate the final
@@ -94,21 +157,22 @@ def generate_final_response(state: AgentState):
     """
     logger.info("--- Generating Final Structured Response ---")
     messages = state['messages']
-    request_type = state.get('request_type', 'general') # Get topic from state
-
-    # Load potential suggestions for the current topic
-    potential_suggestions = load_suggestions_by_topic(request_type)
-    suggestions_prompt_part = ""
-    if potential_suggestions:
-        suggestions_list_str = json.dumps(potential_suggestions, indent=2)
-        suggestions_prompt_part = (
-            f"\n\nConsider the following potential suggestions for the user (topic: {request_type}). "
-            f"Evaluate if any are relevant based on their 'initiator' condition and the current conversation context. "
-            f"Include relevant ones in the 'suggestions' list in your JSON output. Only include suggestions if their initiator condition is met by the current context.\n"
-            f"Potential Suggestions:\n{suggestions_list_str}"
-        )
-    else:
-        suggestions_prompt_part = "\n\nNo specific suggestions available for this topic."
+    request_type = state.get('request_type', 'general')
+    character_id = state.get('character_id')
+    
+    # Get context-appropriate suggestions using the suggestion manager
+    potential_suggestions = get_suggestions_for_topic(
+        topic=request_type,
+        entity_id=character_id,
+        # Can add additional context parameters here
+    )
+    
+    # Generate the suggestion prompt part
+    suggestions_prompt_part = get_suggestion_prompt(
+        topic=request_type,
+        potential_suggestions=potential_suggestions,
+        entity_id=character_id
+    )
 
     # Construct a prompt for the structured LLM
     prompt_messages = messages + [
@@ -125,17 +189,24 @@ def generate_final_response(state: AgentState):
     try:
         structured_response = structured_llm.invoke(prompt_messages)
         logger.info(f"Structured LLM Response: {structured_response}")
+        
         # Validate if it matches the Pydantic model (structured_llm should handle this)
         if isinstance(structured_response, ChatResponse):
              return {"final_response": structured_response}
         else:
              logger.error(f"Structured LLM output did not match ChatResponse schema: {structured_response}")
              # Fallback response
-             fallback_resp = ChatResponse(response="Sorry, I encountered an issue generating the final response format.", suggestions=[])
+             fallback_resp = ChatResponse(
+                 response="Sorry, I encountered an issue generating the final response format.",
+                 suggestions=get_fallback_suggestions(request_type, character_id)
+             )
              return {"final_response": fallback_resp}
     except Exception as e:
         logger.error(f"Error invoking structured LLM: {e}", exc_info=True)
-        fallback_resp = ChatResponse(response=f"Sorry, an error occurred while generating the response: {e}", suggestions=[])
+        fallback_resp = ChatResponse(
+            response=f"Sorry, an error occurred while generating the response: {e}",
+            suggestions=get_fallback_suggestions(request_type, character_id)
+        )
         return {"final_response": fallback_resp}
 
 
@@ -180,12 +251,16 @@ def should_continue_or_finalize(state: AgentState) -> str:
 workflow = StateGraph(AgentState)
 
 # Add nodes
+workflow.add_node("extract_character_names", extract_character_name)
 workflow.add_node("agent_tool_or_direct", call_model_for_tool_or_direct)
 workflow.add_node("call_tool", tool_node_executor)
 workflow.add_node("final_responder", generate_final_response) # New final node
 
-# Define entry point
-workflow.set_entry_point("agent_tool_or_direct")
+# Define entry point - start with character name extraction
+workflow.set_entry_point("extract_character_names") 
+
+# Add edge from character extraction to agent
+workflow.add_edge("extract_character_names", "agent_tool_or_direct")
 
 # Add conditional edges
 workflow.add_conditional_edges(

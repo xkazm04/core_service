@@ -1,14 +1,4 @@
-interface Suggestion:
-  feature: string // name of the feature to clearly identify it on the first sight
-  use_case: string // description of the feature for better LLM understanding
-  initiatior: string // condition for LLM based on which the feature is suggested
-  suggested_label: string // button label displayed in chat window
-  suggested_text: string // template for response format back to chatbot -- TBD není úplně domyšlený
-  fe_function?: string // operation performed on fe side - customize suggestion
-  be_function?: string // operation performed on be side - needs to be mapped in executor.py
-  fe_navigation?: string // position of frontend page to navigate to - promyslet, initiate on click nebo automaticky - UI upravit
-  topic: string // business context mapping
-[
+
   { 
     "feature": "Create chracter",
     "use_case": "Create new character to the project. Required input: Name. Optional input: Faction, ...",

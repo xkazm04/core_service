@@ -151,18 +151,18 @@ def db_beat_lookup_tool(db: Session, project_id: UUID) -> str:
 
 # --- Tool Executor (Handles dispatching and DB session) ---
 
+# Update the execute_db_tool function to use extracted names
 def execute_db_tool(state: dict, db: Session) -> dict:
     """
     Parses the latest AI tool call, gets required context (like project_id),
     and executes the corresponding database lookup function based on SCHEMA NAME.
+    Includes support for extracted character names.
     """
     messages = state['messages']
     last_message = messages[-1]
 
     if not isinstance(last_message, AIMessage) or not last_message.tool_calls:
         logger.error("execute_db_tool called without AIMessage or tool_calls in last message.")
-        # Returning an AIMessage here might confuse the flow, prefer ToolMessage if possible
-        # If tool_call_id is unknown, this might be problematic.
         return {"messages": [ToolMessage(content="Error: Expected tool call not found.", tool_call_id="error_no_tool_call")]}
 
     # Assuming one tool call per turn for simplicity
@@ -184,11 +184,20 @@ def execute_db_tool(state: dict, db: Session) -> dict:
         if tool_name == CharacterLookupArgs.__name__:
             parsed_args = CharacterLookupArgs.parse_obj(tool_args)
             character_id = parsed_args.character_id or state.get('character_id')
+            character_name = parsed_args.character_name
+            
+            # If character_name is None but we have extracted names, use the first one
+            if not character_name and not character_id and "extracted_character_names" in state:
+                extracted_names = state["extracted_character_names"]
+                if extracted_names:
+                    character_name = extracted_names[0]
+                    logger.info(f"Using extracted character name: {character_name}")
+            
             tool_result_content = db_character_lookup_tool(
                 db=db,
                 project_id=project_id,
                 character_id=character_id,
-                character_name=parsed_args.character_name
+                character_name=character_name
             )
         elif tool_name == StoryLookupArgs.__name__:
             tool_result_content = db_story_lookup_tool(

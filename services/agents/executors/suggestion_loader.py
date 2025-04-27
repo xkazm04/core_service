@@ -2,7 +2,7 @@ import json
 import os
 from typing import List, Dict, Any
 import logging
-
+from services.agents.executors.suggestions import suggestion_data
 logger = logging.getLogger(__name__)
 
 # Define the base path relative to this file or use absolute paths
@@ -10,7 +10,10 @@ logger = logging.getLogger(__name__)
 SUGGESTIONS_DIR = os.path.join(os.path.dirname(__file__), '..', 'data')
 
 def load_suggestions_by_topic(topic: str) -> List[Dict[str, Any]]:
-    """Loads suggestion definitions from a JSON/TS file based on topic."""
+    """
+    Loads suggestion definitions from a JSON/TS file based on topic.
+    Falls back to in-code suggestion_data if file not found.
+    """
     # Assuming files are named like 'suggestions_{topic}.json'
     # Handle potential .ts extension if needed (might require a TS parser or saving as JSON)
     file_path_json = os.path.join(SUGGESTIONS_DIR, f"suggestions_{topic}.json")
@@ -24,6 +27,15 @@ def load_suggestions_by_topic(topic: str) -> List[Dict[str, Any]]:
         file_path = file_path_ts
     else:
         logger.warning(f"Suggestion file not found for topic '{topic}' in {SUGGESTIONS_DIR}")
+        # Fall back to in-code suggestion_data filtered by topic
+        if suggestion_data:
+            filtered_suggestions = [s for s in suggestion_data if s.get("topic", "").lower() == topic.lower()]
+            if filtered_suggestions:
+                logger.info(f"Using {len(filtered_suggestions)} hardcoded suggestions for topic '{topic}'")
+                return filtered_suggestions
+            else:
+                logger.info(f"No matching hardcoded suggestions for topic '{topic}'. Using all {len(suggestion_data)} suggestions.")
+                return suggestion_data
         return []
 
     try:
@@ -57,31 +69,9 @@ if __name__ == '__main__':
     dummy_file_path = os.path.join(SUGGESTIONS_DIR, f"suggestions_{dummy_topic}.json")
     if not os.path.exists(dummy_file_path):
          os.makedirs(SUGGESTIONS_DIR, exist_ok=True)
-         dummy_data = [
-             {
-                 "feature": "Character Trait",
-                 "use_case": "Add missing behavior trait",
-                 "initiator": "Character does not have CharacterTrait with type='behavior'",
-                 "suggestion_label": "Add Behavior Trait",
-                 "suggestion_text": "Let's define the character's typical behavior.",
-                 "be_function": "add_trait_behavior",
-                 "fe_navigation": "center.actors.traits",
-                 "topic": "character"
-             },
-             {
-                 "feature": "Character Trait",
-                 "use_case": "Add missing knowledge trait",
-                 "initiator": "Character does not have CharacterTrait with type='knowledge'",
-                 "suggestion_label": "Add Knowledge Trait",
-                 "suggestion_text": "What specific knowledge does this character possess?",
-                 "be_function": "add_trait_knowledge",
-                 "fe_navigation": "center.actors.traits",
-                 "topic": "character"
-             }
-         ]
          try:
              with open(dummy_file_path, 'w', encoding='utf-8') as f:
-                 json.dump(dummy_data, f, indent=2)
+                 json.dump(suggestion_data, f, indent=2)
              print(f"Created dummy suggestion file: {dummy_file_path}")
          except Exception as e:
              print(f"Error creating dummy file: {e}")
