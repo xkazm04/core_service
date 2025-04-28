@@ -1,4 +1,29 @@
 
+initial_suggesions = [
+    { 
+        "feature": "Develope character",
+        "use_case": "Predecessor to build the character look, personality, way it behaves and speaks.",
+        "initiator": "User wonders what features can he do in the project.",
+        "message": "Please provide me options from `initial` topic to start with.",
+        "be_function": "initial_character",
+        "fe_function": "initial_character",
+        "fe_location": "center.char.list",
+        "topic": "initial",
+        "doublecheck": False
+    },
+    {
+        "feature": "Write a story",
+        "use_case": "Predecessor to build the story, plot, and dialog lines.",
+        "initiator": "User wonders what features can he do in the project.",
+        "message": "Please provide me options from `initial` topic to start with.",
+        "be_function": "initial_story",
+        "fe_function": "initial_story",
+        "fe_location": "center.story",
+        "topic": "initial",
+        "doublecheck": False
+    }
+]
+
 suggestion_data = [
     {
         "feature": "Select character",
@@ -9,7 +34,7 @@ suggestion_data = [
         "be_function": "character_select",
         "fe_location": "center.char.list",
         "topic": "character",
-        "doublecheck": True
+        "doublecheck": "true"
     },
     {
         "feature": "Create chracter",
@@ -20,7 +45,7 @@ suggestion_data = [
         "be_function": "character_create",
         "fe_location": "center.char.list",
         "topic": "character",
-        "doublecheck": True
+        "doublecheck": "true"
     },
     {
         "feature": "Rename character",
@@ -31,7 +56,7 @@ suggestion_data = [
         "be_function": "character_rename",
         "fe_location": "center.char.list",
         "topic": "character",
-        "doublecheck": True
+        "doublecheck": "true"
     },
     {
         "feature": "Edit character trait",
@@ -42,7 +67,7 @@ suggestion_data = [
         "be_function": "trait_add",
         "fe_location": "center.char.about",
         "topic": "character",
-        "doublecheck": True
+        "doublecheck": "true"
     },
     {
         "feature": "Add relationship",
@@ -53,6 +78,6 @@ suggestion_data = [
         "be_function": "relationship_add",
         "fe_location": "center.char.rel",
         "topic": "character",
-        "doublecheck": True
+        "doublecheck": "true"
     }
 ]

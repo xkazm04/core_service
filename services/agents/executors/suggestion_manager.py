@@ -120,20 +120,20 @@ def get_default_select_suggestion(entity_type: str) -> Dict[str, Any]:
             "feature": f"Select {entity_type}",
             "use_case": f"Select a {entity_type} to interact with",
             "initiator": f"Always suggest when user discusses {entity_type}s without a specific {entity_type} selected",
-            "suggestion_label": f"Select {entity_type}",
-            "suggestion_text": f"Please select a {entity_type} to interact with",
+            "message": f"Please select a {entity_type} to interact with",
             "be_function": f"select_{entity_type}",
+            "fe_function": f"{entity_type}_select",
             "fe_navigation": f"sidebar.{entity_type}s",
-            "topic": entity_type
+            "topic": entity_type,
         }
     elif entity_type.lower() == "story":
         return {
             "feature": f"Select {entity_type}",
             "use_case": f"Select a {entity_type} to work with",
             "initiator": f"Always suggest when user discusses {entity_type} without a specific {entity_type} selected",
-            "suggestion_label": f"Select {entity_type}",
-            "suggestion_text": f"Please select a {entity_type} to work with",
+            "message": f"Please select a {entity_type} to work with",
             "be_function": f"select_{entity_type}",
+            "fe_function": f"{entity_type}_select",
             "fe_navigation": f"sidebar.{entity_type}",
             "topic": entity_type
         }
@@ -144,9 +144,9 @@ def get_default_select_suggestion(entity_type: str) -> Dict[str, Any]:
             "feature": f"Select {entity_type}",
             "use_case": f"Select a {entity_type}",
             "initiator": f"Always suggest when discussing {entity_type} without specific selection",
-            "suggestion_label": f"Select {entity_type}",
-            "suggestion_text": f"Please select a {entity_type}",
+            "message": f"Please select a {entity_type}",
             "be_function": f"select_{entity_type}",
+            "fe_function": f"{entity_type}_select",
             "fe_navigation": f"sidebar.main",
             "topic": entity_type
         }
@@ -172,8 +172,8 @@ def get_fallback_suggestions(topic: str, entity_id: Optional[UUID] = None) -> Li
                 feature="Select character",
                 use_case="Select a character to interact with",
                 initiator="Always suggest when user discusses characters without a specific character selected",
-                suggestion_label="Select character",
-                suggestion_text="Please select a character to interact with",
+                message="Please select a character to interact with",
+                fe_function="character_select",
                 be_function="select_character",
                 fe_navigation="sidebar.characters",
                 topic="character"
@@ -188,8 +188,8 @@ def get_fallback_suggestions(topic: str, entity_id: Optional[UUID] = None) -> Li
                 feature="Select story",
                 use_case="Select a story to work with",
                 initiator="Always suggest when user discusses story without a specific story selected",
-                suggestion_label="Select story",
-                suggestion_text="Please select a story to work with",
+                message="Please select a story to work with",
+                fe_function="character_select",
                 be_function="select_story",
                 fe_navigation="sidebar.stories",
                 topic="story"

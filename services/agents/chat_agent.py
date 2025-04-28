@@ -36,13 +36,15 @@ class AgentState(TypedDict):
     final_response: Optional[ChatResponse]
 
 # --- LLM and Tool Binding ---
-# Use a model that supports JSON mode well (like newer GPT-4o/GPT-4 Turbo)
-llm = ChatOpenAI(model="gpt-4o") # Or gpt-4-turbo
+llm = ChatOpenAI(model="gpt-4.1-mini")
+# model notes:
+# -- gpt-4o-mini = is not able to fit into reasonable time limits, responses are often inaaccurate VS price
+# -- gpt-4.1-mini = fair price, very fast VS little bit less accurate - GOTO FOR TESTING - FUNCTIONAL REQUESTS (e.g. "create a entity in db")
+# -- gpt-4o = precise and quick VS expensive price
 llm_with_tools = llm.bind_tools(
     [CharacterLookupArgs, StoryLookupArgs, BeatLookupArgs],
     tool_choice="auto"
 )
-# --- NEW: LLM for Structured JSON Output ---
 # Bind the ChatResponse schema to the LLM for the final output generation
 structured_llm = llm.with_structured_output(ChatResponse)
 

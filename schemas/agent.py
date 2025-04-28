@@ -6,8 +6,8 @@ class Suggestion(BaseModel):
     feature: str
     use_case: str
     initiator: str
-    suggestion_label: str
-    suggestion_text: str
+    message: str
+    fe_function: Optional[str] = None
     be_function: Optional[str] = None
     fe_navigation: Optional[str] = None
     topic: str
