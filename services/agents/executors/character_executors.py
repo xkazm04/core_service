@@ -1,7 +1,7 @@
 import logging
 from uuid import UUID
 from sqlalchemy.orm import Session
-from models.models import Character, CharacterTrait 
+from models.models import Character, CharacterTrait, CharacterRelationshipEvent
 import logging
 logger = logging.getLogger(__name__)
 
@@ -10,6 +10,9 @@ logger = logging.getLogger(__name__)
 # - target_char_type: Type of the character (default: 'Unknown')
 # - trait_type: Type of the trait (behavior, humor, speech, knowledge, communication)
 # - trait_description: Description of the trait (default: '[Please describe the typical behavior]')
+# - secondary_character_id: ID of the secondary character (for relationship creation)
+# - relationship_type: Type of relationship (default: 'friend')
+# - relationship_description: Description of the relationship (default: '[Please describe the relationship]')
 
 def character_create(db: Session, project_id: UUID, **kwargs) -> str:
     """
@@ -144,3 +147,64 @@ def add_trait_behavior(db: Session, project_id: UUID, character_id: UUID, **kwar
         db.rollback()
         logger.error(f"Failed to add 'behavior' trait for character {character_id}: {e}", exc_info=True)
         return f"Error: Failed to add behavior trait due to a database issue."
+    
+def relationship_add(db: Session, project_id: UUID, character_id: UUID, **kwargs) -> str:
+    """
+    Adds a relationship between two characters.
+    
+    Parameters:
+    - db: Database session
+    - project_id: UUID of the project
+    - character_id: UUID of the primary character
+    - **kwargs: Additional parameters
+        - secondary_character_id: ID of the secondary character (required)
+        - relationship_type: Type of relationship (default: 'friend')
+        - relationship_description: Description of the relationship (default: '[Please describe the relationship]')
+    """
+    logger.info(f"Executing 'relationship_add' for character {character_id} in project {project_id}")
+    if not character_id:
+        return "Error: Cannot add relationship without a character ID."
+
+    # Check if the primary character exists in the project
+    primary_character = db.query(Character).filter(
+        Character.id == character_id,
+        Character.project_id == project_id
+    ).first()
+
+    if not primary_character:
+        return f"Error: Primary character with ID {character_id} not found in project {project_id}."
+
+    # Get secondary character ID from kwargs
+    secondary_character_id = kwargs.get('secondary_character_id')
+    if not secondary_character_id:
+        return "Error: Cannot add relationship without a secondary character ID."
+
+    # Check if the secondary character exists in the project
+    secondary_character = db.query(Character).filter(
+        Character.id == secondary_character_id,
+        Character.project_id == project_id
+    ).first()
+
+    if not secondary_character:
+        return f"Error: Secondary character with ID {secondary_character_id} not found in project {project_id}."
+    
+    try:
+        # Get relationship type and description from kwargs or use defaults
+        relationship_type = kwargs.get('relationship_type', 'friend')
+        relationship_description = kwargs.get('relationship_description', '[Please describe the relationship]')
+        
+        # Create a new relationship event with provided parameters
+        new_relationship = CharacterRelationshipEvent(
+            character_id=character_id,
+            related_character_id=secondary_character_id,
+            type=relationship_type,
+            description=relationship_description
+        )
+        db.add(new_relationship)
+        db.commit()
+        logger.info(f"Successfully added relationship between {primary_character.name} and {secondary_character.name}.")
+        return f"Added a '{relationship_type}' relationship between '{primary_character.name}' and '{secondary_character.name}'."
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to add relationship between {primary_character.name} and {secondary_character.name}: {e}", exc_info=True)
+        return f"Error: Failed to add relationship due to a database issue."

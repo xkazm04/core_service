@@ -2,7 +2,8 @@ import logging
 from uuid import UUID
 from sqlalchemy.orm import Session
 from typing import Optional
-from services.agents.executors.character_executors import add_trait_behavior, character_create, character_rename
+from services.agents.executors.character_executors import add_trait_behavior, character_create, character_rename, relationship_add
+from services.agents.executors.faction_executors import faction_create, faction_rename
 
 logger = logging.getLogger(__name__)
 
@@ -10,8 +11,11 @@ EXECUTOR_MAP = {
     # Character executors
     "character_create": character_create,
     "character_rename": character_rename,
-    # "relationship_add": add_relationship,
+    "relationship_add": relationship_add,
     "trait_add": add_trait_behavior,
+    # Faction executors
+    "faction_create": faction_create,
+    "faction_rename": faction_rename,
 }
 
 def execute_suggestion_function(

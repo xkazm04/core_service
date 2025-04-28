@@ -34,7 +34,6 @@ def get_suggestions_for_topic(topic: str, entity_id: Optional[UUID] = None, **co
     
     # Handle entity ID requirements based on topic
     if topic.lower() == "character" and entity_id is None:
-        # Character topic requires a character_id - check if select_character suggestion exists
         select_character_exists = any(
             s.get("be_function") == "select_character" or s.get("fe_function") == "character_select" 
             for s in potential_suggestions
@@ -46,7 +45,17 @@ def get_suggestions_for_topic(topic: str, entity_id: Optional[UUID] = None, **co
             potential_suggestions.append(select_character_suggestion)
             logger.info("Added default select_character suggestion to potential suggestions")
     
-    # Similar blocks for other entity types can be added here
+    elif topic.lower() == "faction" and entity_id is None:
+        select_faction_exists = any(
+            s.get("be_function") == "faction_select" or s.get("fe_function") == "faction_select" 
+            for s in potential_suggestions
+        )
+        
+        if not select_faction_exists:
+            select_faction_suggestion = get_default_select_suggestion("faction")
+            potential_suggestions.append(select_faction_suggestion)
+            logger.info("Added default select_faction suggestion to potential suggestions")
+            
     elif topic.lower() == "story" and entity_id is None:
         # Add story selection suggestion if needed
         select_story_exists = any(
@@ -91,7 +100,9 @@ def get_suggestion_prompt(topic: str, potential_suggestions: List[Dict[str, Any]
         # Create a minimal prompt with just the required selection suggestion if applicable
         entity_missing = (
             (topic.lower() == "character" and entity_id is None) or
+            (topic.lower() == "faction" and entity_id is None) or
             (topic.lower() == "story" and entity_id is None)
+            
             # Add more entity types as needed
         )
         
@@ -125,6 +136,17 @@ def get_default_select_suggestion(entity_type: str) -> Dict[str, Any]:
             "fe_function": f"{entity_type}_select",
             "fe_navigation": f"sidebar.{entity_type}s",
             "topic": entity_type,
+        }
+    elif entity_type.lower() == "faction":
+        return {
+            "feature": f"Select {entity_type}",
+            "use_case": f"Select a {entity_type} to work with",
+            "initiator": f"Always suggest when user discusses {entity_type} without a specific {entity_type} selected",
+            "message": f"Please select a {entity_type} to work with",
+            "be_function": f"select_{entity_type}",
+            "fe_function": f"{entity_type}_select",
+            "fe_navigation": f"sidebar.{entity_type}s",
+            "topic": entity_type
         }
     elif entity_type.lower() == "story":
         return {
@@ -177,6 +199,20 @@ def get_fallback_suggestions(topic: str, entity_id: Optional[UUID] = None) -> Li
                 be_function="select_character",
                 fe_navigation="sidebar.characters",
                 topic="character"
+            )
+        )
+    elif topic.lower() == "faction" and entity_id is None:
+        # Faction without ID needs select_faction
+        fallback_suggestions.append(
+            Suggestion(
+                feature="Select faction",
+                use_case="Select a faction to work with",
+                initiator="Always suggest when user discusses factions without a specific faction selected",
+                message="Please select a faction to work with",
+                fe_function="faction_select",
+                be_function="select_faction",
+                fe_navigation="sidebar.factions",
+                topic="faction"
             )
         )
     

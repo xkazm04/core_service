@@ -79,5 +79,27 @@ suggestion_data = [
         "fe_location": "center.char.rel",
         "topic": "character",
         "doublecheck": "true"
+    },
+    {
+        "feature": "Create faction",
+        "use_case": "Create new faction to the project.",
+        "initiator": "User requires in message specifically to create a new faction, or mentiones a faction name not known to the project.",
+        "message": "Faction name and description specified in the request params.",
+        "fe_function": "faction_create",
+        "be_function": "faction_create",
+        "fe_location": "center.char.factions",
+        "topic": "faction",
+        "doublecheck": "true"
+    },
+    {
+        "feature": "Rename faction",
+        "use_case": "Change name of the existing faction in project.",
+        "initiator": "User requires in message to rename faction",
+        "message": "Faction name specified in the request params.",
+        "fe_function": "faction_rename",
+        "be_function": "faction_rename",
+        "fe_location": "center.char.factions",
+        "topic": "faction",
+        "doublecheck": "true"   
     }
 ]
