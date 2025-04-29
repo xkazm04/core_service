@@ -101,5 +101,82 @@ suggestion_data = [
         "fe_location": "center.char.factions",
         "topic": "faction",
         "doublecheck": "true"   
+    },
+    # Story (Act, Beat, Scene)
+    {
+        "feature": "Act concept",
+        "use_case": "Suggestion of creative idea to design story act based on available project information.",
+        "initiator": "User requires specifically to design act concept, before manipulation in database.",
+        "message": "Feedback provided in request kwargs",
+        "fe_function": "act_concept",
+        "fe_location": "center.story",
+        "topic": "story",
+        "doublecheck": "true",
+        "kwargs_form": {
+            "concept": "textarea",
+            "act": "select",
+        }
+    },
+    {
+        "feature": "Create act",
+        "use_case": "Create new act to the project.",
+        "initiator": "User requires in message specifically to create a new act, or mentiones an act name not known to the project.",
+        "message": "Act name and description specified in the request params.",
+        "fe_function": "act_create",
+        "be_function": "act_create",
+        "fe_location": "center.story",
+        "topic": "story",
+        "doublecheck": "true",
+        "kwargs_form": {
+            "name": "text",
+            "description": "textarea",
+        }
+    },
+    {
+        "feature": "Edit act description",
+        "use_case": "Edit act description in the project.",
+        "initiator": "User wants to redesign act storyline based on the description in request parameters",
+        "message": "Act id and description specified in the request params.",
+        "fe_function": "act_edit",
+        "be_function": "act_edit",
+        "fe_location": "center.story",
+        "topic": "story",
+        "doublecheck": "true",
+        "kwargs_form": {
+            "description": "textarea",
+            "act_id": "act_select",
+        }
+    },
+    {
+        "feature": "Beat concept",
+        "use_case": "Suggestion of creative idea to design story objective (beat) based on available project information.",
+        "initiator": "User requires specifically to design beat concept, before manipulation in database.",
+        "message": "Feedback provided in request kwargs",
+        "fe_function": "beat_concept",
+        "fe_location": "center.story.beats",
+        "topic": "story",
+        "doublecheck": "true",
+        "kwargs_form": {
+            "concept": "textarea",
+            "type": "select",
+            "act": "select",
+        },
+    },
+    {
+        "feature": "Create beat",
+        "use_case": "Create new beat to the project.",
+        "initiator": "User requires in message specifically to create a new beat, or mentiones a beat name not known to the project.",
+        "message": "Beat name and description specified in the request params.",
+        "fe_function": "beat_create",
+        "be_function": "beat_create",
+        "fe_location": "center.story.beats",
+        "topic": "story",
+        "doublecheck": "true",
+        "kwargs_form": {
+            "name": "text",
+            "description": "textarea",
+            "act": "select",
+            "type": "select",
+        }
     }
 ]
