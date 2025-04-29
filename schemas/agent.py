@@ -11,6 +11,8 @@ class Suggestion(BaseModel):
     be_function: Optional[str] = None
     fe_navigation: Optional[str] = None
     topic: str
+    kwargs_form: Optional[dict] = None 
+    doublecheck: Optional[bool] = None
 
 class ChatResponse(BaseModel):
     response: str

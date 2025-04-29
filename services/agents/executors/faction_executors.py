@@ -1,7 +1,7 @@
 import logging
 from uuid import UUID
 from sqlalchemy.orm import Session
-from models.models import Character, Faction, FactionRelationship
+from models.models import Faction
 import logging
 logger = logging.getLogger(__name__)
 

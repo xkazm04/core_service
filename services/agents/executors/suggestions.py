@@ -34,7 +34,7 @@ suggestion_data = [
         "be_function": "character_select",
         "fe_location": "center.char.list",
         "topic": "character",
-        "doublecheck": "true"
+        "doublecheck": "true",
     },
     {
         "feature": "Create chracter",
@@ -45,7 +45,11 @@ suggestion_data = [
         "be_function": "character_create",
         "fe_location": "center.char.list",
         "topic": "character",
-        "doublecheck": "true"
+        "doublecheck": "true",
+        "kwargs_form": {
+            "target_char_name": "input",
+            "target_char_type": "character_type_select",
+        }
     },
     {
         "feature": "Rename character",
@@ -56,7 +60,11 @@ suggestion_data = [
         "be_function": "character_rename",
         "fe_location": "center.char.list",
         "topic": "character",
-        "doublecheck": "true"
+        "doublecheck": "true",
+        "kwargs_form": {
+            "target_char_name": "input",
+            "character_id": "character_select",
+        }
     },
     {
         "feature": "Edit character trait",
@@ -67,7 +75,10 @@ suggestion_data = [
         "be_function": "trait_add",
         "fe_location": "center.char.about",
         "topic": "character",
-        "doublecheck": "true"
+        "doublecheck": "true",
+        "kwargs_form": {
+            "trait_description": "textarea",
+        }
     },
     {
         "feature": "Add relationship",
@@ -78,7 +89,12 @@ suggestion_data = [
         "be_function": "relationship_add",
         "fe_location": "center.char.rel",
         "topic": "character",
-        "doublecheck": "true"
+        "doublecheck": "true",
+        "kwargs_form": {
+            "secondary_character_id": "character_select",
+            "relationship_type": "relationship_type_select",
+            "relationship_description": "textarea",
+        }
     },
     {
         "feature": "Create faction",
@@ -89,7 +105,11 @@ suggestion_data = [
         "be_function": "faction_create",
         "fe_location": "center.char.factions",
         "topic": "faction",
-        "doublecheck": "true"
+        "doublecheck": "true",
+        "kwargs_form": {
+            "faction_name": "input",
+            "faction_description": "textarea",
+        }
     },
     {
         "feature": "Rename faction",
@@ -100,7 +120,11 @@ suggestion_data = [
         "be_function": "faction_rename",
         "fe_location": "center.char.factions",
         "topic": "faction",
-        "doublecheck": "true"   
+        "doublecheck": "true",
+        "kwargs_form": {
+            "faction_name": "input",
+            "faction_id": "faction_select",
+        }
     },
     # Story (Act, Beat, Scene)
     {
@@ -113,8 +137,8 @@ suggestion_data = [
         "topic": "story",
         "doublecheck": "true",
         "kwargs_form": {
-            "concept": "textarea",
-            "act": "select",
+            "act_concept": "textarea",
+            "act_id": "select",
         }
     },
     {
@@ -128,8 +152,8 @@ suggestion_data = [
         "topic": "story",
         "doublecheck": "true",
         "kwargs_form": {
-            "name": "text",
-            "description": "textarea",
+            "act_name": "input",
+            "act_description": "textarea",
         }
     },
     {
@@ -143,7 +167,7 @@ suggestion_data = [
         "topic": "story",
         "doublecheck": "true",
         "kwargs_form": {
-            "description": "textarea",
+            "act_description": "textarea",
             "act_id": "act_select",
         }
     },
@@ -157,9 +181,7 @@ suggestion_data = [
         "topic": "story",
         "doublecheck": "true",
         "kwargs_form": {
-            "concept": "textarea",
-            "type": "select",
-            "act": "select",
+            "beat_concept": "textarea",
         },
     },
     {
@@ -173,10 +195,22 @@ suggestion_data = [
         "topic": "story",
         "doublecheck": "true",
         "kwargs_form": {
-            "name": "text",
-            "description": "textarea",
-            "act": "select",
-            "type": "select",
+            "beat_name": "input",
+            "beat_description": "textarea",
+        }
+    },{
+        "feature": "Edit beat",
+        "use_case": "Edit beat description in the project.",
+        "initiator": "User wants to redesign beat storyline based on the description in request parameters",
+        "message": "Beat id and description specified in the request params.",
+        "fe_function": "beat_edit",
+        "be_function": "beat_edit",
+        "fe_location": "center.story.beats",
+        "topic": "story",
+        "doublecheck": "true",
+        "kwargs_form": {
+            "beat_description": "textarea",
+            "beat_id": "beat_select",
         }
     }
 ]

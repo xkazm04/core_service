@@ -5,7 +5,6 @@ from models.models import Act, Beat
 from pydantic import BaseModel
 from typing import List, Optional
 from uuid import UUID
-from datetime import datetime
 from schemas.act import CreateAct, EditAct
 from services.story import create_act
     

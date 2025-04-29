@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from typing import Optional
 from services.agents.executors.character_executors import add_trait_behavior, character_create, character_rename, relationship_add
 from services.agents.executors.faction_executors import faction_create, faction_rename
+from services.agents.executors.story_executors import act_create, act_edit, beat_create, beat_edit
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +17,11 @@ EXECUTOR_MAP = {
     # Faction executors
     "faction_create": faction_create,
     "faction_rename": faction_rename,
+    # Story executors
+    "act_create": act_create,
+    "act_edit": act_edit,
+    "beat_create": beat_create,
+    "beat_edit": beat_edit,
 }
 
 def execute_suggestion_function(

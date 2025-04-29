@@ -56,20 +56,16 @@ def get_suggestions_for_topic(topic: str, entity_id: Optional[UUID] = None, **co
             potential_suggestions.append(select_faction_suggestion)
             logger.info("Added default select_faction suggestion to potential suggestions")
             
-    elif topic.lower() == "story" and entity_id is None:
-        # Add story selection suggestion if needed
-        select_story_exists = any(
-            s.get("be_function") == "select_story" or s.get("fe_function") == "story_select" 
+    elif topic.lower() == "scene" and entity_id is None:
+        select_scene_exists = any(
+            s.get("be_function") == "scene_select" or s.get("fe_function") == "scene_select" 
             for s in potential_suggestions
         )
         
-        if not select_story_exists:
-            # Add default select_story suggestion (when implemented)
-            select_story_suggestion = get_default_select_suggestion("story")
-            potential_suggestions.append(select_story_suggestion)
-            logger.info("Added default select_story suggestion to potential suggestions")
-    
-    # Add more entity types as needed
+        if not select_scene_exists:
+            select_scene_suggestion = get_default_select_suggestion("scene")
+            potential_suggestions.append(select_scene_suggestion)
+            logger.info("Added default select_scene suggestion to potential suggestions")
     
     logger.info(f"Returning {len(potential_suggestions)} potential suggestions")
     return potential_suggestions
@@ -101,7 +97,8 @@ def get_suggestion_prompt(topic: str, potential_suggestions: List[Dict[str, Any]
         entity_missing = (
             (topic.lower() == "character" and entity_id is None) or
             (topic.lower() == "faction" and entity_id is None) or
-            (topic.lower() == "story" and entity_id is None)
+            (topic.lower() == "story" and entity_id is None) or 
+            (topic.lower() == "scene" and entity_id is None)
             
             # Add more entity types as needed
         )
@@ -126,18 +123,7 @@ def get_default_select_suggestion(entity_type: str) -> Dict[str, Any]:
     Returns:
         Default suggestion object for selecting an entity
     """
-    if entity_type.lower() == "character":
-        return {
-            "feature": f"Select {entity_type}",
-            "use_case": f"Select a {entity_type} to interact with",
-            "initiator": f"Always suggest when user discusses {entity_type}s without a specific {entity_type} selected",
-            "message": f"Please select a {entity_type} to interact with",
-            "be_function": f"select_{entity_type}",
-            "fe_function": f"{entity_type}_select",
-            "fe_navigation": f"sidebar.{entity_type}s",
-            "topic": entity_type,
-        }
-    elif entity_type.lower() == "faction":
+    if entity_type.lower() == "faction" or entity_type.lower() == "scene" or entity_type.lower() == "character":
         return {
             "feature": f"Select {entity_type}",
             "use_case": f"Select a {entity_type} to work with",
@@ -146,30 +132,6 @@ def get_default_select_suggestion(entity_type: str) -> Dict[str, Any]:
             "be_function": f"select_{entity_type}",
             "fe_function": f"{entity_type}_select",
             "fe_navigation": f"sidebar.{entity_type}s",
-            "topic": entity_type
-        }
-    elif entity_type.lower() == "story":
-        return {
-            "feature": f"Select {entity_type}",
-            "use_case": f"Select a {entity_type} to work with",
-            "initiator": f"Always suggest when user discusses {entity_type} without a specific {entity_type} selected",
-            "message": f"Please select a {entity_type} to work with",
-            "be_function": f"select_{entity_type}",
-            "fe_function": f"{entity_type}_select",
-            "fe_navigation": f"sidebar.{entity_type}",
-            "topic": entity_type
-        }
-    # Add more entity types as needed
-    else:
-        # Generic fallback
-        return {
-            "feature": f"Select {entity_type}",
-            "use_case": f"Select a {entity_type}",
-            "initiator": f"Always suggest when discussing {entity_type} without specific selection",
-            "message": f"Please select a {entity_type}",
-            "be_function": f"select_{entity_type}",
-            "fe_function": f"{entity_type}_select",
-            "fe_navigation": f"sidebar.main",
             "topic": entity_type
         }
 
@@ -215,20 +177,18 @@ def get_fallback_suggestions(topic: str, entity_id: Optional[UUID] = None) -> Li
                 topic="faction"
             )
         )
-    
-    # Add more entity types as needed
-    elif topic.lower() == "story" and entity_id is None:
-        # Story without ID needs select_story
+    elif topic.lower() == "scene" and entity_id is None:
+        # Scene without ID needs select_scene
         fallback_suggestions.append(
             Suggestion(
-                feature="Select story",
-                use_case="Select a story to work with",
-                initiator="Always suggest when user discusses story without a specific story selected",
-                message="Please select a story to work with",
-                fe_function="character_select",
-                be_function="select_story",
-                fe_navigation="sidebar.stories",
-                topic="story"
+                feature="Select scene",
+                use_case="Select a scene to work with",
+                initiator="Always suggest when user discusses scenes without a specific scene selected",
+                message="Please select a scene to work with",
+                fe_function="scene_select",
+                be_function="select_scene",
+                fe_navigation="sidebar.scenes",
+                topic="scene"
             )
         )
     
