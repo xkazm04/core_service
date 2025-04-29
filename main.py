@@ -11,13 +11,12 @@ import time
 import json
 from routes import api_router  
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
-from services.sse import event_generator, broadcast_event
-from pydantic import BaseModel 
 import threading
 import signal
+import sys
 from datetime import datetime
 import asyncio
+from services.sse import background_task
 
 logging.basicConfig(
     level=logging.INFO,
@@ -177,29 +176,7 @@ def health_check():
         return JSONResponse(status_code=503, content=health_data)
     
     return health_data
-    
-@app.get("/sse/{client_id}")
-async def sse_endpoint(request: Request, client_id: str):
-    return StreamingResponse(
-        event_generator(request, client_id),
-        media_type="text/event-stream",
-    )
-    
-# Broadcast an event to all connected clients    
-class EventData(BaseModel):
-    event: str
-    data: dict
-    
-example_event = EventData(event="example-event", data={"key": "value"})
-    
-@app.post("/sse/broadcast")
-async def broadcast_event_endpoint(event_data: EventData):
-    try:
-        await broadcast_event(event_data)
-        return JSONResponse(status_code=200, content={"message": "Event broadcasted successfully"})
-    except Exception as e:
-        logger.error(f"Error broadcasting event: {str(e)}")
-        raise HTTPException(status_code=500, detail="Error broadcasting event")
+
     
 @app.on_event("startup")
 def startup_db_client():
@@ -216,19 +193,15 @@ async def trigger_restart(request: Request):
     
     logger.warning("Received restart signal from API Gateway")
     
-    # Fork a process to restart the service
-    if os.name != 'nt':  # Unix-like systems
-        pid = os.fork()
-        if pid == 0:  # Child process
-            os.execv(sys.executable, [sys.executable] + sys.argv)
-        else:  # Parent process
-            logger.info(f"Triggered restart in child process {pid}")
-            return {"status": "restarting", "pid": pid}
-    else:  # Windows
-        import subprocess
-        subprocess.Popen([sys.executable] + sys.argv)
-        os.kill(os.getpid(), signal.SIGTERM)
-        return {"status": "restarting"}
+    import subprocess
+    subprocess.Popen([sys.executable] + sys.argv)
+    os.kill(os.getpid(), signal.SIGTERM)
+    return {"status": "restarting"}
+
+@app.on_event("startup")
+async def start_background_tasks():
+    # Start SSE background task
+    asyncio.create_task(background_task())
 
 
 if __name__ == "__main__":

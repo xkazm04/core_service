@@ -6,10 +6,8 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 from database import get_db
 from schemas.agent import ChatResponse
-# Import agent components
 from services.agents.chat_agent import AgentState, workflow, memory
-from services.agents.tools.db_lookup import CharacterLookupArgs, StoryLookupArgs, BeatLookupArgs
-# --- NEW: Import suggestion executor ---
+from services.agents.tools import CharacterLookupArgs, StoryLookupArgs, BeatLookupArgs
 from services.agents.executor import execute_suggestion_function
 
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage

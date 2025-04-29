@@ -14,6 +14,7 @@ from routes.line import router as line_router
 from routes.beats import router as beats_router
 from routes.agent import router as agent_router
 from routes.improve import router as improve_router
+from routes.sse import router as sse_router
 
 api_router = APIRouter()
 
@@ -32,3 +33,4 @@ api_router.include_router(trait_router, prefix="/traits", tags=["Traits"])
 api_router.include_router(beats_router, prefix="/beats", tags=["Beats"])
 api_router.include_router(agent_router, prefix="/agent", tags=["Agent"])
 api_router.include_router(improve_router, prefix="/improve", tags=["Improve"])
+api_router.include_router(sse_router, prefix="/sse", tags=["SSE"])

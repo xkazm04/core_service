@@ -8,7 +8,7 @@ python-json-logger==2.0.7
 loguru==0.7.2
 fastapi==0.115.12
 uvicorn==0.23.2
-httpx==0.25.2
+httpx==0.28.1
 
 python-consul==1.1.0
 prometheus_client==0.21.1
@@ -24,7 +24,8 @@ openai==1.76.0
 langsmith==0.3.33
 langchain==0.3.24
 langchain-openai==0.3.14
-langchain-core==0.3.55
+langchain-core==0.3.56
 langchain_groq==0.3.2
+langchain_community==0.3.23
 langgraph==0.3.34
 agno==1.4.1
