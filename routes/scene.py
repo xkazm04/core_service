@@ -5,7 +5,6 @@ from models.models import Scene, Line
 from pydantic import BaseModel
 from typing import List, Optional
 from schemas.scene import SceneBase, SceneCreate, SceneUpdate, SceneResponse, SceneReorder
-
 router = APIRouter(tags=["Scenes"])
 
 # Pydantic Models for Response
@@ -91,8 +90,11 @@ def get_scenes_by_project_id(project_id: str, db: Session = Depends(get_db)):
 
 # Get scenes by project ID and act
 @router.get("/project/{project_id}/act/{act}", response_model=List[SceneBase])
-def get_scenes_by_project_id_and_act(project_id: str, act: int, db: Session = Depends(get_db)):
-    scenes = db.query(Scene).filter(Scene.project_id == project_id, Scene.act == act).all()
+def get_scenes_by_project_id_and_act(project_id: str, act: str, db: Session = Depends(get_db)):
+    scenes = db.query(Scene).filter(Scene.project_id == project_id, Scene.act_id == act).all()
+    # if not scenes, return 200 OK with empty list
+    if not scenes:
+        return []
     return scenes if scenes else []
 
 # Response model contains a list of errors or success message

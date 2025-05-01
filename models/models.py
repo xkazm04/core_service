@@ -19,6 +19,9 @@ class Project(Base):
     theme = Column(String, nullable=True)
     concept = Column(String, nullable=True)
     overview = Column(String, nullable=True)
+    time_period = Column(String, nullable=True)
+    audience = Column(String, nullable=True)
+    setting = Column(String, nullable=True)
     created_at = Column(DateTime, nullable=True, default=datetime.utcnow)
 
     scenes = relationship('Scene', back_populates="project", cascade="all, delete-orphan")
@@ -126,7 +129,7 @@ class Scene(Base):
     __tablename__ = "scenes"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    act = Column(Integer, nullable=True)
+    act_id = Column(UUID, nullable=True)
     name = Column(String, nullable=False)
     order = Column(Integer, nullable=False)
     project_id = Column(UUID(as_uuid=True), ForeignKey("projects.id"), nullable=False)

@@ -5,7 +5,7 @@ import datetime
 
 class SceneBase(BaseModel):
     id: UUID
-    act: Optional[int] = None
+    act: Optional[UUID] = None
     name: str
     order: int
     project_id: UUID
@@ -16,7 +16,7 @@ class SceneBase(BaseModel):
         orm_mode = True  # Ensures SQLAlchemy models can be converted to Pydantic
 
 class SceneCreate(BaseModel):
-    act: int
+    act_id: UUID
     name: str
     order: int
     project_id: UUID
