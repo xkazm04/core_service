@@ -5,7 +5,7 @@ import datetime
 
 class SceneBase(BaseModel):
     id: UUID
-    act: Optional[UUID] = None
+    act_id: Optional[UUID] = None
     name: str
     order: int
     project_id: UUID
@@ -18,7 +18,6 @@ class SceneBase(BaseModel):
 class SceneCreate(BaseModel):
     act_id: UUID
     name: str
-    order: int
     project_id: UUID
 
 class SceneUpdate(BaseModel):

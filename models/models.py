@@ -30,6 +30,21 @@ class Project(Base):
     acts = relationship("Act", back_populates="project", cascade="all, delete-orphan")
     factions = relationship("Faction", back_populates="project", cascade="all, delete-orphan")
     beats = relationship("Beat", back_populates="project", cascade="all, delete-orphan")
+    paragraphs = relationship("Paragraph", back_populates="project", cascade="all, delete-orphan")    
+class Paragraph(Base):
+    __tablename__ = "paragraphs"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    project_id = Column(UUID(as_uuid=True), ForeignKey("projects.id"), nullable=False)
+    title = Column(String, nullable=False)
+    description = Column(String, nullable=True)
+    reviewed = Column(Boolean, default=False)
+    order = Column(Integer, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    act_id = Column(UUID(as_uuid=True), ForeignKey("acts.id"), nullable=True)
+
+    project = relationship("Project", back_populates="paragraphs")
+    act = relationship("Act", back_populates="paragraphs")
     
 class Faction(Base):
     __tablename__ = "factions"
@@ -207,6 +222,7 @@ class Act(Base):
     project = relationship("Project", back_populates="acts")
     beats = relationship("Beat", back_populates="act", cascade="all, delete-orphan")
     faction_relationships = relationship("FactionRelationship", back_populates="event_act", cascade="all, delete-orphan")
+    paragraphs = relationship("Paragraph", back_populates="act")
 
     
 class Beat(Base):

@@ -1,24 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
-from models.models import Act, Beat
-from pydantic import BaseModel
-from typing import List, Optional
+from models.models import Act
+from typing import List
 from uuid import UUID
-from schemas.act import CreateAct, EditAct
+from schemas.act import CreateAct, EditAct, ActResponse
 from services.story import create_act
     
 router = APIRouter(tags=["Acts"])
-
-class ActResponse(BaseModel):
-    id: UUID
-    project_id: UUID
-    name: str
-    order: int
-    description: Optional[str] = None
-    
-    class Config:
-        orm_mode = True
 
 #1. GET act by ID
 @router.get("/{act_id}", response_model=ActResponse)

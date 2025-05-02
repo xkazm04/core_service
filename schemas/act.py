@@ -11,3 +11,13 @@ class EditAct(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     order: Optional[int] = None
+    
+class ActResponse(BaseModel):
+    id: UUID
+    project_id: UUID
+    name: str
+    order: int
+    description: Optional[str] = None
+    
+    class Config:
+        orm_mode = True

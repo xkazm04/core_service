@@ -7,11 +7,11 @@ from typing import List, Optional
 from schemas.scene import SceneBase, SceneCreate, SceneUpdate, SceneResponse, SceneReorder
 router = APIRouter(tags=["Scenes"])
 
-# Pydantic Models for Response
-
 @router.post("/", response_model=SceneResponse)
 def create_scene(scene_data: SceneCreate, db: Session = Depends(get_db)):
     scene = Scene(**scene_data.dict())
+    max_order = db.query(Scene).filter(Scene.act_id == scene_data.act_id, Scene.project_id == scene_data.project_id).count()
+    scene.order = max_order + 1 if max_order else 1
     db.add(scene)
     db.commit()
     db.refresh(scene)
@@ -38,7 +38,7 @@ def reorder_scene(scene_data: SceneReorder, db: Session = Depends(get_db)):
 
     current_order = scene.order  # Old position
     project_id = scene.project_id
-    act = scene.act
+    act = scene.act_id
 
     if current_order == scene_data.new_order:
         return {"message": "No reordering needed", "scene": scene}
@@ -46,7 +46,7 @@ def reorder_scene(scene_data: SceneReorder, db: Session = Depends(get_db)):
     # Fetch all scenes within the same project and act, ordered by current order
     scenes = (
         db.query(Scene)
-        .filter(Scene.act == act, Scene.project_id == project_id)
+        .filter(Scene.act_id == act, Scene.project_id == project_id)
         .order_by(Scene.order)
         .all()
     )
@@ -111,7 +111,7 @@ def validate_scenes(project_id: str, act: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Invalid project_id")
     
     # Get all scenes for the project and act
-    scenes = db.query(Scene).filter(Scene.project_id == project_id, Scene.act == act).all()
+    scenes = db.query(Scene).filter(Scene.project_id == project_id, Scene.act_id == act).all()
     
     # If no scenes found for this act, return 400
     if not scenes:
@@ -145,7 +145,7 @@ def delete_scene(scene_id: str, db: Session = Depends(get_db)):
     db.commit()
 
     # Reorder remaining scenes
-    remaining_scenes = db.query(Scene).filter(Scene.act == scene.act, Scene.project_id == scene.project_id).order_by(Scene.order).all()
+    remaining_scenes = db.query(Scene).filter(Scene.act_id == scene.act_id, Scene.project_id == scene.project_id).order_by(Scene.order).all()
     for index, s in enumerate(remaining_scenes):
         s.order = index + 1
 
