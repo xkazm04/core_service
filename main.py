@@ -17,9 +17,6 @@ import sys
 from datetime import datetime
 import asyncio
 from services.sse import background_task
-from copilotkit.integrations.fastapi import add_fastapi_endpoint
-from copilotkit import CopilotKitRemoteEndpoint
-from services.copilotkit.kit_actions import action
 
 logging.basicConfig(
     level=logging.INFO,
@@ -206,11 +203,6 @@ async def start_background_tasks():
     # Start SSE background task
     asyncio.create_task(background_task())
     
-# Initialize the CopilotKit SDK
-logger.info("Initializing CopilotKit SDK...")
-sdk = CopilotKitRemoteEndpoint(actions=[action])
-add_fastapi_endpoint(app, sdk, "/copilotkit_remote")
-logger.info("CopilotKit SDK initialized with endpoint at /copilotkit_remote")
 
 
 if __name__ == "__main__":

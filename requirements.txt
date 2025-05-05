@@ -29,4 +29,3 @@ langchain_groq==0.3.2
 langchain_community==0.3.23
 langgraph==0.3.34
 agno==1.4.1
-copilotkit==0.1.39
