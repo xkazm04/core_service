@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import Field, BaseModel
 from typing import Dict, Any, Optional
-
 from uuid import UUID
 from sqlalchemy.orm import Session
 from database import get_db
@@ -24,7 +23,9 @@ class ChatRequest(BaseModel):
     message: str
     type: str
     project_id: UUID
+    act_id: Optional[UUID] = None
     character_id: Optional[UUID] = None
+    chat_session_id: Optional[str] = Field(None, description="Unique ID for the chat session to maintain conversation memory")
     be_function: Optional[str] = Field(None, description="The 'be_function' name if the request comes from clicking a suggestion.")
     function_params: Optional[Dict[str, Any]] = Field(
         default_factory=dict,
@@ -43,18 +44,23 @@ async def chat_endpoint(request: ChatRequest, db: Session = Depends(get_db)):
     Receives user message or suggestion click, executes backend function if applicable,
     and returns agent response with suggestions.
     """
+    
     user_input = request.message # This will be suggestion_text if suggestion was clicked
     user_id = "test_user" if not request.user_id else request.user_id
+    act_id = request.act_id
     project_id = request.project_id
     character_id = request.character_id
     request_type = request.type.lower()
     selected_be_function = request.be_function 
+    
+    chat_session_id = f"{user_id}:{request.chat_session_id}" if request.chat_session_id else f"{user_id}:default"
 
     logger.info(f"Received request from user {user_id} for project {project_id} with type {request_type}.")
+    logger.info(f"Using chat session ID: {chat_session_id}")
     if selected_be_function:
         logger.info(f"Request originated from suggestion click: executing '{selected_be_function}'")
 
-    # --- Execute Suggestion Function (if provided) ---
+
     execution_result_message = None
     if selected_be_function:
         try:
@@ -62,6 +68,7 @@ async def chat_endpoint(request: ChatRequest, db: Session = Depends(get_db)):
             result_message = execute_suggestion_function(
                 function_name=selected_be_function,
                 db=db,
+                act_id=act_id,
                 project_id=request.project_id,
                 character_id=request.character_id,
                 **request.function_params  # Use provided parameters
@@ -74,27 +81,50 @@ async def chat_endpoint(request: ChatRequest, db: Session = Depends(get_db)):
     # --- Prepare Agent Input ---
     agent_input_message = user_input
     if execution_result_message:
-        # Prepend the execution result to the message sent to the agent
-        # This informs the agent about what just happened.
         agent_input_message = f"[Action Result: {execution_result_message}]\n\nUser message: {user_input}"
         logger.info("Prepended execution result to agent input.")
 
     config = {
         "configurable": {
-            "thread_id": user_id,
-            "db_session": db # Pass DB session for agent's tools
+            "thread_id": chat_session_id, 
+            "db_session": db 
         }
     }
 
     # --- Initial State Setup ---
     # Use the potentially modified agent_input_message
     initial_messages = [HumanMessage(content=agent_input_message)]
+    
     # Add system messages based on request_type (same as before)
     system_message_content = ""
     if request_type == 'character':
-         system_message_content = f"The user wants to discuss a character within project {project_id}. Use the {CharacterLookupArgs.__name__} tool if you need specific details about a character (you might need to ask for the name or ID if not provided)."
+        system_message_content = """
+        You are a helpful assistant for character development.
+        
+        If the user's message suggests creating, editing, or managing characters:
+        1. Use the ExecutorFunctionArgs tool with the appropriate function_name
+        2. Construct the params object with the necessary parameters
+        
+        Available functions:
+        - character_create: Creates a new character (params: target_char_name)
+        - character_rename: Renames a character (params: target_char_name)
+        - trait_add: Adds a trait to a character (params: trait_description, trait_type)
+        - relationship_add: Creates a relationship (params: secondary_character_id, relationship_type, relationship_description)
+        """
     elif request_type == 'story':
-         system_message_content = f"The user wants to discuss the overall story context (overview, acts) for project {project_id}. Use the {StoryLookupArgs.__name__} tool if you need the project overview or act details."
+        system_message_content = """
+        You are a helpful assistant for story development.
+        
+        If the user's message suggests creating, editing, or managing story elements:
+        1. Use the ExecutorFunctionArgs tool with the appropriate function_name
+        2. Construct the params object with the necessary parameters
+        
+        Available functions:
+        - act_create: Creates a new act (params: act_name, act_description)
+        - act_edit: Edits an act (params: act_id, act_description)
+        - beat_create: Creates a new beat (params: beat_name, beat_description)
+        - beat_edit: Edits a beat (params: beat_id, beat_description)
+        """
     elif request_type == 'analysis':
          system_message_content = (
              f"The user wants an analysis of the story progress for project {project_id}. "
@@ -119,8 +149,6 @@ async def chat_endpoint(request: ChatRequest, db: Session = Depends(get_db)):
         final_response=None
     )
     logger.info(f"Initial State (after potential execution): {initial_state}")
-
-    # --- Run Agent Graph ---
     final_state_values = None
     try:
         logger.info("Starting graph stream...")
@@ -176,3 +204,33 @@ async def chat_endpoint(request: ChatRequest, db: Session = Depends(get_db)):
             
     logger.warning("Final state or final_response missing after stream.")
     return ChatResponse(response="Sorry, I couldn't generate a final response.", suggestions=[])
+
+# @router.post("/reset_chat")
+# async def reset_chat(
+#     user_id: str = Query(..., description="User ID"),
+#     chat_session_id: Optional[str] = Query(None, description="Optional specific chat session ID"),
+#     project_id: Optional[UUID] = Query(None, description="Optional project ID to include in initial state")
+# ):
+#     """
+#     Reset the conversation memory for a specific chat session.
+#     Use this when the conversation gets stuck in an error loop.
+#     """
+#     session_key = f"{user_id}:{chat_session_id}" if chat_session_id else f"{user_id}:default"
+    
+#     try:
+#         # Clear the memory for this session
+#         memory.clear(session_key)
+        
+#         logger.info(f"Chat memory reset for session {session_key}")
+        
+#         # Return success response
+#         return {
+#             "status": "success", 
+#             "message": f"Chat memory reset for session {session_key}"
+#         }
+#     except Exception as e:
+#         logger.error(f"Failed to reset chat memory: {str(e)}")
+#         raise HTTPException(
+#             status_code=500, 
+#             detail=f"Failed to reset chat memory: {str(e)}"
+#         )

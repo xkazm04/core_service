@@ -25,7 +25,8 @@ def should_continue_or_finalize(state: AgentState) -> str:
                 "BeatLookupArgs",
                 "SceneLookupArgs",
                 "ProjectGapAnalysisArgs",
-                "YouTubeSearchArgs"  
+                "YouTubeSearchArgs",
+                "ExecutorFunctionArgs"  # Added ExecutorFunctionArgs to known tools
             }
             if tool_name in known_tool_schemas:
                 logger.info(f"--- Decision: Call Tool ('{tool_name}') ---")

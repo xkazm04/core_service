@@ -45,7 +45,7 @@ def act_create(db: Session, project_id: UUID, **kwargs) -> str:
         logger.error(f"Failed to add new act to project {project_id}: {e}", exc_info=True)
         return f"Error: Failed to add new act due to a database issue."
     
-def act_edit(db: Session, project_id: UUID, **kwargs) -> str:
+def act_edit(db: Session, project_id: UUID, act_id: UUID, **kwargs) -> str:
     """
     Edits an act in the project.
     
@@ -84,7 +84,7 @@ def act_edit(db: Session, project_id: UUID, **kwargs) -> str:
         logger.error(f"Failed to edit act {act_id}: {e}", exc_info=True)
         return f"Error: Failed to edit act due to a database issue."
     
-def beat_create(db: Session, project_id: UUID, **kwargs) -> str:
+def beat_create(db: Session, project_id: UUID,  **kwargs) -> str:
     """
     Adds a beat to the project.
     
@@ -154,3 +154,41 @@ def beat_edit(db: Session, project_id: UUID, **kwargs) -> str:
         db.rollback()
         logger.error(f"Failed to edit beat {beat_id}: {e}", exc_info=True)
         return f"Error: Failed to edit beat due to a database issue."
+    
+def scene_create(db: Session, project_id: UUID, act_id: UUID, **kwargs) -> str:
+    """
+    Adds a scene to the project.
+    
+    Parameters:
+    - db: Database session
+    - project_id: UUID of the project
+    - **kwargs: Additional parameters for scene creation
+        - act_order: ID of the act (for relationship creation)
+        - scene_name: Name of the scene 
+        - scene_description: Description of the scene (default: '[Please describe the scene]')
+    """
+    logger.info(f"Executing 'scene_create' for project {project_id}")
+
+    # Create a new scene with provided parameters or defaults
+    try:
+        name = kwargs.get('scene_name', 'Unnamed Scene')
+        description = kwargs.get('scene_description', '[Please describe the scene]')
+        
+            
+        max_order = db.query(Scene).filter(Scene.act_id == act_id, Scene.project_id == project_id).count()
+        new_scene = Scene(
+            project_id=project_id,
+            name=name,
+            description=description,
+            act_id=act_id,
+            order = max_order + 1 if max_order else 1
+        )
+        
+        db.add(new_scene)
+        db.commit()
+        logger.info(f"Successfully added new scene '{name}' to project {project_id}.")
+        return f"Added new scene '{name}' to the project."
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to add new scene to project {project_id}: {e}", exc_info=True)
+        return f"Error: Failed to add new scene due to a database issue."

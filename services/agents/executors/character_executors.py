@@ -21,23 +21,28 @@ def character_create(db: Session, project_id: UUID, **kwargs) -> str:
     Parameters:
     - db: Database session
     - project_id: UUID of the project
-    - character_id: UUID of the character
     - **kwargs: Additional parameters for character creation
-        - target_char_name: Name of the character (default: 'Unnamed Character')
-        - target_char_type: Type of the character (default: 'Unknown')
+        - target_char_name: Name of the character
     """
     logger.info(f"Executing 'character_create' for project {project_id}")
 
     # Create a new character with provided parameters or defaults
     try:
-        name = kwargs.get('target_char_name', 'Unnamed Character')
-        type_ = kwargs.get('target_char_type', 'Unknown')
+        name = kwargs.get('target_char_name')
 
         new_character = Character(
             project_id=project_id,
             name=name,
-            type=type_,
+            type='major',
         )
+        # Validate existing character names in the project
+        existing_character = db.query(Character).filter(
+            Character.project_id == project_id,
+            Character.name == name
+        ).first()
+        if existing_character:
+            logger.warning(f"Character name '{name}' already exists in project {project_id}.")
+            return f"Error: Character name '{name}' already exists in this project."
         db.add(new_character)
         db.commit()
         logger.info(f"Successfully added new character '{name}' to project {project_id}.")

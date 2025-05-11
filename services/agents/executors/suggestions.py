@@ -8,8 +8,7 @@ initial_suggesions = [
         "be_function": "initial_character",
         "fe_function": "initial_character",
         "fe_location": "center.char.list",
-        "topic": "initial",
-        "doublecheck": False
+        "topic": "initial"
     },
     {
         "feature": "Write a story",
@@ -19,8 +18,7 @@ initial_suggesions = [
         "be_function": "initial_story",
         "fe_function": "initial_story",
         "fe_location": "center.story",
-        "topic": "initial",
-        "doublecheck": False
+        "topic": "initial"
     }
 ]
 
@@ -33,8 +31,7 @@ suggestion_data = [
         "fe_function": "character_select",
         "be_function": "character_select",
         "fe_location": "center.char.list",
-        "topic": "character",
-        "doublecheck": "true",
+        "topic": "character"
     },
     {
         "feature": "Create chracter",
@@ -45,10 +42,8 @@ suggestion_data = [
         "be_function": "character_create",
         "fe_location": "center.char.list",
         "topic": "character",
-        "doublecheck": "true",
         "kwargs_form": {
             "target_char_name": "input",
-            "target_char_type": "character_type_select",
         }
     },
     {
@@ -60,7 +55,6 @@ suggestion_data = [
         "be_function": "character_rename",
         "fe_location": "center.char.list",
         "topic": "character",
-        "doublecheck": "true",
         "kwargs_form": {
             "target_char_name": "input",
             "character_id": "character_select",
@@ -75,7 +69,6 @@ suggestion_data = [
         "be_function": "trait_add",
         "fe_location": "center.char.about",
         "topic": "character",
-        "doublecheck": "true",
         "kwargs_form": {
             "trait_description": "textarea",
         }
@@ -89,7 +82,6 @@ suggestion_data = [
         "be_function": "relationship_add",
         "fe_location": "center.char.rel",
         "topic": "character",
-        "doublecheck": "true",
         "kwargs_form": {
             "secondary_character_id": "character_select",
             "relationship_type": "relationship_type_select",
@@ -105,7 +97,6 @@ suggestion_data = [
         "be_function": "faction_create",
         "fe_location": "center.char.factions",
         "topic": "faction",
-        "doublecheck": "true",
         "kwargs_form": {
             "faction_name": "input",
             "faction_description": "textarea",
@@ -120,13 +111,11 @@ suggestion_data = [
         "be_function": "faction_rename",
         "fe_location": "center.char.factions",
         "topic": "faction",
-        "doublecheck": "true",
         "kwargs_form": {
             "faction_name": "input",
             "faction_id": "faction_select",
         }
     },
-    # Story (Act, Beat, Scene)
     {
         "feature": "Act concept",
         "use_case": "Suggestion of creative idea to design story act based on available project information.",
@@ -135,7 +124,6 @@ suggestion_data = [
         "fe_function": "act_concept",
         "fe_location": "center.story",
         "topic": "story",
-        "doublecheck": "true",
         "kwargs_form": {
             "act_concept": "textarea",
             "act_id": "select",
@@ -150,7 +138,6 @@ suggestion_data = [
         "be_function": "act_create",
         "fe_location": "center.story",
         "topic": "story",
-        "doublecheck": "true",
         "kwargs_form": {
             "act_name": "input",
             "act_description": "textarea",
@@ -165,7 +152,6 @@ suggestion_data = [
         "be_function": "act_edit",
         "fe_location": "center.story",
         "topic": "story",
-        "doublecheck": "true",
         "kwargs_form": {
             "act_description": "textarea",
             "act_id": "act_select",
@@ -179,7 +165,6 @@ suggestion_data = [
         "fe_function": "beat_concept",
         "fe_location": "center.story.beats",
         "topic": "story",
-        "doublecheck": "true",
         "kwargs_form": {
             "beat_concept": "textarea",
         },
@@ -193,7 +178,6 @@ suggestion_data = [
         "be_function": "beat_create",
         "fe_location": "center.story.beats",
         "topic": "story",
-        "doublecheck": "true",
         "kwargs_form": {
             "beat_name": "input",
             "beat_description": "textarea",
@@ -207,10 +191,34 @@ suggestion_data = [
         "be_function": "beat_edit",
         "fe_location": "center.story.beats",
         "topic": "story",
-        "doublecheck": "true",
         "kwargs_form": {
             "beat_description": "textarea",
             "beat_id": "beat_select",
+        }
+    },{
+        "feature": "Scene concept",
+        "use_case": "Suggestion of creative idea to design scene based on available project information.",
+        "initiator": "User requires specifically to design scene concept, before manipulation in database.",
+        "message": "Feedback provided in request kwargs",
+        "fe_function": "scene_concept",
+        "fe_location": "center.story.scenes",
+        "topic": "story",
+        "kwargs_form": {
+            "scene_concept": "textarea",
+        },
+    },
+    {
+        "feature": "Create scene",
+        "use_case": "Create new scene to the project.",
+        "initiator": "User requires in message specifically to create a new scene, or mentiones a scene name not known to the project.",
+        "message": "Scene name and description specified in the request params.",
+        "fe_function": "scene_create",
+        "be_function": "scene_create",
+        "fe_location": "center.story.scenes",
+        "topic": "story",
+        "kwargs_form": {
+            "scene_name": "input",
+            "scene_description": "textarea",
         }
     }
 ]

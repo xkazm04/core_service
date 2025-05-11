@@ -26,6 +26,13 @@ def create_character_endpoint(
             type=character_data.get("type"),
             faction_id=character_data.get("faction_id"),
         )
+        # Validate duplicate character names inside the same project
+        existing_character = db.query(Character).filter(
+            Character.project_id == character.project_id,
+            Character.name == character.name
+        ).first()
+        if existing_character:
+            raise HTTPException(status_code=400, detail="Character name already exists in this project.")
         db.add(character)  
         db.commit()
         db.refresh(character)

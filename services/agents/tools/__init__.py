@@ -6,7 +6,7 @@ from .tool_schemas import (
     StoryLookupArgs,
     BeatLookupArgs,
     ProjectGapAnalysisArgs,
-    SceneLookupArgs
+    SceneLookupArgs,
 )
 
 from .db_tool_executor import execute_db_tool
@@ -14,6 +14,7 @@ from .db_character_tools import db_character_lookup_tool
 from .db_story_tools import db_story_lookup_tool, db_beat_lookup_tool, db_scene_lookup_tool
 from .db_analysis_tools import db_gap_analysis_tool
 from .youtube_tools import YouTubeSearchArgs, execute_youtube_tool
+from .tool_schemas import ExecutorFunctionArgs
 
 __all__ = [
     'CharacterLookupArgs',
@@ -22,6 +23,7 @@ __all__ = [
     'ProjectGapAnalysisArgs',
     'SceneLookupArgs',
     'YouTubeSearchArgs',
+    'ExecutorFunctionArgs',
     'execute_db_tool',
     'execute_youtube_tool',
     'db_character_lookup_tool',
