@@ -47,7 +47,7 @@ async def chat_endpoint(request: ChatRequest, db: Session = Depends(get_db)):
     
     user_input = request.message # This will be suggestion_text if suggestion was clicked
     user_id = "test_user" if not request.user_id else request.user_id
-    act_id = request.act_id
+    act_id = request.act_id # Get act_id from request
     project_id = request.project_id
     character_id = request.character_id
     request_type = request.type.lower()
@@ -145,8 +145,18 @@ async def chat_endpoint(request: ChatRequest, db: Session = Depends(get_db)):
         messages=initial_messages,
         project_id=project_id,
         character_id=character_id,
+        act_id=act_id, # Pass act_id to initial state
         request_type=request_type,
-        final_response=None
+        extracted_character_names=None, # Initialize if not set earlier
+        be_function=None, # Initialize
+        operation_intent=None, # Initialize
+        operation_params={}, # Initialize
+        missing_params=[], # Initialize
+        final_response=None, # Initialize
+        # Initialize new state fields
+        pending_operation_details=None,
+        awaiting_confirmation=False,
+        db_updated=False 
     )
     logger.info(f"Initial State (after potential execution): {initial_state}")
     final_state_values = None
@@ -168,7 +178,7 @@ async def chat_endpoint(request: ChatRequest, db: Session = Depends(get_db)):
         from schemas.agent import ChatResponse as ExpectedChatResponse
         
         if isinstance(final_response_obj, ExpectedChatResponse):
-             logger.info(f"Returning ChatResponse: {final_response_obj}")
+             logger.info(f"Final structured response (db_updated: {final_response_obj.db_updated}): {final_response_obj}")
              return final_response_obj
         else:
              logger.warning(f"Final state 'final_response' was not the expected ChatResponse type: {type(final_response_obj)}")
@@ -193,17 +203,30 @@ async def chat_endpoint(request: ChatRequest, db: Session = Depends(get_db)):
                  return ExpectedChatResponse(response="Error: Could not generate structured response.", suggestions=[])
     elif final_state_values and "messages" in final_state_values:
         # Try to extract the last AI message as a fallback
+        db_updated_status = final_state_values.get("db_updated", False)
         try:
             messages = final_state_values["messages"]
             last_ai_msg = next((m for m in reversed(messages) if isinstance(m, AIMessage)), None)
             if last_ai_msg:
-                logger.info(f"Using last AI message as fallback response: {last_ai_msg.content[:100]}...")
-                return ChatResponse(response=last_ai_msg.content, suggestions=[])
+                logger.info(f"Using last AI message as fallback response. db_updated: {db_updated_status}")
+                # Ensure suggestions are handled, e.g., get_fallback_suggestions
+                from services.agents.executors.suggestion_manager import get_fallback_suggestions
+                fallback_suggestions = get_fallback_suggestions(final_state_values.get('request_type', 'general'))
+                return ChatResponse(response=last_ai_msg.content, suggestions=fallback_suggestions, db_updated=db_updated_status)
         except Exception as e:
-            logger.error(f"Error extracting fallback response from messages: {e}")
-            
-    logger.warning("Final state or final_response missing after stream.")
-    return ChatResponse(response="Sorry, I couldn't generate a final response.", suggestions=[])
+            logger.error(f"Error in fallback response generation: {e}")
+            # Fall through to generic error
+
+    logger.warning("No final_response or suitable fallback messages found in final agent state.")
+    # Ensure db_updated is included even in this generic error response
+    db_updated_status_at_end = final_state_values.get("db_updated", False) if final_state_values else False
+    from services.agents.executors.suggestion_manager import get_fallback_suggestions
+    final_fallback_suggestions = get_fallback_suggestions(request.type.lower() if request else 'general')
+    return ChatResponse(
+        response="Sorry, I encountered an issue and couldn't complete your request.", 
+        suggestions=final_fallback_suggestions, 
+        db_updated=db_updated_status_at_end
+    )
 
 # @router.post("/reset_chat")
 # async def reset_chat(

@@ -18,6 +18,7 @@ class AgentState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], lambda x, y: x + y]
     project_id: Optional[UUID]
     character_id: Optional[UUID]
+    act_id: Optional[UUID] 
     request_type: Optional[str]
     extracted_character_names: Optional[List[str]]
     be_function: Optional[str] = None
@@ -25,3 +26,6 @@ class AgentState(TypedDict):
     operation_params: Optional[Dict[str, Any]] = {} 
     missing_params: Optional[List[str]] = [] 
     final_response: Optional[ChatResponse]
+    pending_operation_details: Optional[Dict[str, Any]] = None # Stores {'operation': str, 'params': dict}
+    awaiting_confirmation: bool = False
+    db_updated: bool = False 
